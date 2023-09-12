@@ -17,36 +17,28 @@ controllers:
 Add to entities:
 nelsys-api\config\packages\doctrine.yaml
 ```
-parameters:
-    # Adds a fallback DATABASE_URL if the env var is not set.
-    # This allows you to run cache:warmup even if your
-    # environment variables are not available yet.
-    # You should not need to change this value.
-    #env(DATABASE_URL): ""
 doctrine:
     dbal:
         # configure these for your database server
-        #url: '%env(resolve:DATABASE_URL)%'
-        #driver_class: Realestate\MssqlBundle\Driver\PDODblib\Driver
-        driver: "%env(resolve:db_driver)%"
-        host: "%env(resolve:db_host)%"
-        dbname: "%env(resolve:db_name)%"
-        user: "%env(resolve:db_user)%"
-        password: "%env(resolve:db_password)%"
-        port: "%env(resolve:db_port)%"
-        instancename: "%env(resolve:db_instance)%"
-        options:
-            TrustServerCertificate: yes
-            Encrypt: No            
-            Language: "English"          
+        driver: "pdo_mysql"
+        server_version: "5.7"
+        charset: utf8mb4
+        url: "%env(resolve:DATABASE_URL)%"
         default_table_options:
-            #charset: utf8mb4
-            collate: SQL_Latin1_General_CP850_CI_AI
+            charset: utf8mb4
+            collate: utf8mb4_unicode_ci
         mapping_types:
-            identificador: string
-            descricao: string
-            tipo: string
+            enum: string
+        options:
+            1002: 'SET sql_mode=(SELECT REPLACE(@@sql_mode, "ONLY_FULL_GROUP_BY", ""));SET TRANSACTION ISOLATION LEVEL READ COMMITTED;'
     orm:
+        dql:
+            numeric_functions:
+                acos: DoctrineExtensions\Query\Mysql\Acos
+                cos: DoctrineExtensions\Query\Mysql\Cos
+                sin: DoctrineExtensions\Query\Mysql\Sin
+                pi: DoctrineExtensions\Query\Mysql\Pi
+                rand: DoctrineExtensions\Query\Mysql\Rand
         auto_generate_proxy_classes: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
@@ -56,11 +48,11 @@ doctrine:
                 type: annotation
                 dir: "%kernel.project_dir%/src/Entity"
                 prefix: 'App\Entity'
-                alias: App       
+                alias: App
             Products:
                 is_bundle: false
                 type: annotation
                 dir: "%kernel.project_dir%/vendor/controleonline/products/src/Entity"
                 prefix: 'ControleOnline\Entity'
-                alias: App                                
+                alias: App                             
 ```          
