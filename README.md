@@ -8,7 +8,7 @@
 Create a new fila on controllers:
 config\routes\controllers\products.yaml
 
-```
+```yaml
 controllers:
     resource: ../../vendor/controleonline/products/src/Controller/
     type: annotation      
@@ -16,7 +16,7 @@ controllers:
 
 Add to entities:
 nelsys-api\config\packages\doctrine.yaml
-```
+```yaml
 doctrine:
     dbal:
         # configure these for your database server
@@ -49,18 +49,18 @@ doctrine:
                 dir: "%kernel.project_dir%/src/Entity"
                 prefix: 'App\Entity'
                 alias: App
-`          Products:
+           Products:
                 is_bundle: false
                 type: annotation
                 dir: "%kernel.project_dir%/vendor/controleonline/products/src/Entity"
                 prefix: 'ControleOnline\Entity'
-                alias: App                             `
+                alias: App                             
 ```          
 
 
 Add this line on your routes:
 config\packages\api_platform.yaml
-```          
+```yaml          
 mapping   :
     paths: ['%kernel.project_dir%/src/Entity','%kernel.project_dir%/src/Resource',"%kernel.project_dir%/vendor/controleonline/products/src/Entity"]        
 ```          
