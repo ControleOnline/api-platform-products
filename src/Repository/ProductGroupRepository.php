@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Repository;
+namespace ControleOnline\Repository;
 
-use App\Entity\ProductGroup;
+use ControleOnline\Entity\ProductGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
