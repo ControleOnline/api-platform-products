@@ -2,8 +2,10 @@
     "name": "controleonline/products",
     "license": "MIT",
     "autoload": {
-        "psr-4": {
-            "Controleonline\\": "src/"
+        "psr-0": {
+            "Controleonline\\": "src/",
+            "Controleonline\\Entity\\": "src/Entity/",            
+            "Controleonline\\Repository\\": "src/Repository/"
         }
     },
     "authors": [
