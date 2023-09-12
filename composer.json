@@ -2,7 +2,7 @@
     "name": "controleonline/products",
     "license": "MIT",
     "autoload": {
-        "psr-0": {
+        "psr-4": {
             "ControleOnline\\": "src/",
             "ControleOnline\\Entity\\": "src/Entity/",            
             "ControleOnline\\Repository\\": "src/Repository/"
