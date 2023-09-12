@@ -1,6 +1,6 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Products\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
