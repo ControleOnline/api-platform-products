@@ -8,15 +8,15 @@
 Create a new fila on controllers:
 config\routes\controllers\products.yaml
 
-`
+```
 controllers:
     resource: ../../vendor/controleonline/products/src/Controller/
     type: annotation      
-`
+```
 
 Add to entities:
 nelsys-api\config\packages\doctrine.yaml
-`
+```
 parameters:
     # Adds a fallback DATABASE_URL if the env var is not set.
     # This allows you to run cache:warmup even if your
@@ -63,4 +63,4 @@ doctrine:
                 dir: "%kernel.project_dir%/vendor/controleonline/products/src/Entity"
                 prefix: 'ControleOnline\Entity'
                 alias: App                                
-`                
+```          
