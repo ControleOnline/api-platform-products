@@ -56,3 +56,11 @@ doctrine:
                 prefix: 'ControleOnline\Entity'
                 alias: App                             
 ```          
+
+
+Add this line on your routes:
+config\packages\api_platform.yaml
+```          
+mapping   :
+    paths: ['%kernel.project_dir%/src/Entity','%kernel.project_dir%/src/Resource',"%kernel.project_dir%/vendor/controleonline/products/src/Entity"]        
+```          
