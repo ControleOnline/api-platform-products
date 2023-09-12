@@ -1,10 +1,10 @@
 <?php
 
-namespace ControleOnline\Products\Entity;
+namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\People;
-use ControleOnline\Products\Entity\ProductUnity;
+use ControleOnline\Entity\ProductUnity;
 
 
 use ApiPlatform\Metadata\ApiProperty;
@@ -26,7 +26,7 @@ use ApiPlatform\Metadata\ApiResource;
  * Product
  *
  * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unit_id", columns={"product_unit_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Products\Repository\ProductRepository")
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
  */
 
 #[ApiResource(

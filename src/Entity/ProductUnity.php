@@ -1,6 +1,6 @@
 <?php
 
-namespace ControleOnline\Products\Entity;
+namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -23,7 +23,7 @@ use ApiPlatform\Metadata\ApiResource;
  * ProductUnity
  *
  * @ORM\Table(name="product_unity")
- * @ORM\Entity(repositoryClass="ControleOnline\Products\Repository\ProductRepository")
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
  */
 
  #[ApiResource(

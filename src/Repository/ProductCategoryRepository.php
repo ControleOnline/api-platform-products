@@ -1,8 +1,8 @@
 <?php
 
-namespace ControleOnline\Products\Repository;
+namespace ControleOnline\Repository;
 
-use ControleOnline\Products\Entity\ProductCategory;
+use ControleOnline\Entity\ProductCategory;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
