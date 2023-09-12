@@ -1,0 +1,16 @@
+{
+    "name": "controleonline/products",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Controleonline\\Products\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Luiz Kim",
+            "email": "luiz.kim@controleonline.com"
+        }
+    ],
+    "require": {}
+}
