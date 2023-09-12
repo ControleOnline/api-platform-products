@@ -18,37 +18,8 @@ Add to entities:
 nelsys-api\config\packages\doctrine.yaml
 ```yaml
 doctrine:
-    dbal:
-        # configure these for your database server
-        driver: "pdo_mysql"
-        server_version: "5.7"
-        charset: utf8mb4
-        url: "%env(resolve:DATABASE_URL)%"
-        default_table_options:
-            charset: utf8mb4
-            collate: utf8mb4_unicode_ci
-        mapping_types:
-            enum: string
-        options:
-            1002: 'SET sql_mode=(SELECT REPLACE(@@sql_mode, "ONLY_FULL_GROUP_BY", ""));SET TRANSACTION ISOLATION LEVEL READ COMMITTED;'
     orm:
-        dql:
-            numeric_functions:
-                acos: DoctrineExtensions\Query\Mysql\Acos
-                cos: DoctrineExtensions\Query\Mysql\Cos
-                sin: DoctrineExtensions\Query\Mysql\Sin
-                pi: DoctrineExtensions\Query\Mysql\Pi
-                rand: DoctrineExtensions\Query\Mysql\Rand
-        auto_generate_proxy_classes: true
-        naming_strategy: doctrine.orm.naming_strategy.underscore
-        auto_mapping: true
         mappings:
-            App:
-                is_bundle: false
-                type: annotation
-                dir: "%kernel.project_dir%/src/Entity"
-                prefix: 'App\Entity'
-                alias: App
            Products:
                 is_bundle: false
                 type: annotation
