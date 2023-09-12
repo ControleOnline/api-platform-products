@@ -3,7 +3,7 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use ControleOnline\Entity\Category;
+use App\Entity\Category;
 use ControleOnline\Entity\Product;
 
 /**
@@ -24,9 +24,9 @@ class ProductCategory
     private $id;
 
     /**
-     * @var Category
+     * @var App\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="Category")
+     * @ORM\ManyToOne(targetEntity="App\Entity\Category")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
      * })
