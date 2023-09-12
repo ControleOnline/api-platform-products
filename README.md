@@ -49,12 +49,12 @@ doctrine:
                 dir: "%kernel.project_dir%/src/Entity"
                 prefix: 'App\Entity'
                 alias: App
-**            Products:
+`          Products:
                 is_bundle: false
                 type: annotation
                 dir: "%kernel.project_dir%/vendor/controleonline/products/src/Entity"
                 prefix: 'ControleOnline\Entity'
-                alias: App                             **
+                alias: App                             `
 ```          
 
 
