@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Entity;
+namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\ProductGroup;
-use App\Entity\Product;
+use ControleOnline\Entity\ProductGroup;
+use ControleOnline\Entity\Product;
 /**
  * ProductGroupProducts
  *

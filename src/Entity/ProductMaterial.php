@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Entity;
+namespace ControleOnline\Entity;
 
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\GetCollection;
@@ -12,6 +12,7 @@ use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiFilter;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use ControleOnline\Entity\People;
 /**
  * ProductMaterial
  *
@@ -52,10 +53,10 @@ class ProductMaterial
     /**
      * Set people
      *
-     * @param \App\Entity\People $people
+     * @param People $people
      * @return DeliveryTax
      */
-    public function setPeople(\App\Entity\People $people = null)
+    public function setPeople(People $people = null)
     {
         $this->people = $people;
         return $this;
@@ -63,7 +64,7 @@ class ProductMaterial
     /**
      * Get people
      *
-     * @return \App\Entity\People
+     * @return People
      */
     public function getPeople()
     {

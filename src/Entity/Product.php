@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Entity;
+namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\People;
-use App\Entity\ProductUnity;
+use ControleOnline\Entity\People;
+use ControleOnline\Entity\ProductUnity;
 
 
 use ApiPlatform\Metadata\ApiProperty;
