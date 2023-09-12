@@ -3,9 +3,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "ControleOnline\\": "src/",
-            "ControleOnline\\Entity\\": "src/Entity/",            
-            "ControleOnline\\Repository\\": "src/Repository/"
+            "ControleOnline\\": "src/"
         }
     },
     "authors": [

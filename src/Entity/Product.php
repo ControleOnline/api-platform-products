@@ -121,9 +121,9 @@ class Product
     private $active = true;
 
     /**
-     * @var App\Entity\People
+     * @var \App\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="App\Entity\People")
+     * @ORM\ManyToOne(targetEntity="\App\Entity\People")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
      * })
