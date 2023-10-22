@@ -3,14 +3,14 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\Category;
+use ControleOnline\Entity\Category;
 use ControleOnline\Entity\Product;
 
 /**
  * ProductCategory
  *
  * @ORM\Table(name="product_category", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "category_id"})}, indexes={@ORM\Index(name="category_id", columns={"category_id"}), @ORM\Index(name="IDX_CDFC73564584665A", columns={"product_id"})})
- * @ORM\Entity(repositoryClass="App\Repository\ProductCategoryRepository")
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductCategoryRepository")
  */
 class ProductCategory
 {
@@ -24,9 +24,9 @@ class ProductCategory
     private $id;
 
     /**
-     * @var App\Entity\Category
+     * @var ControleOnline\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="App\Entity\Category")
+     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
      * })

@@ -9,7 +9,7 @@ use ControleOnline\Entity\Product;
  * ProductGroupProducts
  *
  * @ORM\Table(name="product_group_products", uniqueConstraints={@ORM\UniqueConstraint(name="product_group", columns={"product_group", "product_relation", "product_id"})}, indexes={@ORM\Index(name="product_id", columns={"product_id"}), @ORM\Index(name="IDX_E9E36809CC9C3F99", columns={"product_group"})})
- * @ORM\Entity(repositoryClass="App\Repository\ProductGroupProductRepository")
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupProductRepository")
  */
 class ProductGroupProducts
 {

@@ -3,7 +3,7 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\People;
+use ControleOnline\Entity\People;
 use ControleOnline\Entity\ProductUnity;
 
 
@@ -121,9 +121,9 @@ class Product
     private $active = true;
 
     /**
-     * @var \App\Entity\People
+     * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="\App\Entity\People")
+     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\People")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
      * })
