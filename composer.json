@@ -1,17 +1,16 @@
 {
-    "name": "controleonline/products",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "ControleOnline\\": "src/",
-            "ControleOnline\\Products\\": "vendor/controleonline/products/src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Controle Online",
-            "email": "luiz.kim@controleonline.com"
-        }
-    ],
-    "require": {}
+  "name": "controleonline/products",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "ControleOnline\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Controle Online",
+      "email": "luiz.kim@controleonline.com"
+    }
+  ],
+  "require": {}
 }
