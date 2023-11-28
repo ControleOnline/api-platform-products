@@ -4,9 +4,9 @@
   "autoload": {
     "psr-4": {
       "ControleOnline\\": "src/",
-      "ControleOnline\\Repository\\": "vendor/controleonline/products/src/Repository/",
-      "ControleOnline\\Entity\\": "vendor/controleonline/products/src/Entity/",
-      "ControleOnline\\Controller\\": "vendor/controleonline/products/src/Controller/"
+      "ControleOnline\\Repository\\": "src/Repository/",
+      "ControleOnline\\Entity\\": "src/Entity/",
+      "ControleOnline\\Controller\\": "Controller/"
     }
   },
   "authors": [
