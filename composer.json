@@ -1,4 +1,5 @@
 {
+  "type": "symfony-bundle",
   "name": "controleonline/products",
   "license": "MIT",
   "autoload": {
