@@ -23,7 +23,7 @@ use ApiPlatform\Metadata\ApiResource;
  * ProductUnity
  *
  * @ORM\Table(name="product_unity")
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductUnityRepository")
  */
 
  #[ApiResource(
@@ -46,7 +46,7 @@ class ProductUnity
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"pruduct_read"})
+     * @Groups({"pruduct_read","product_unity_read"})
 
      */
     private $id;
@@ -55,7 +55,7 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="product_unit", type="string", length=3, nullable=false)
-     * @Groups({"pruduct_read"})
+     * @Groups({"pruduct_read","product_unity_read"})
 
      */
     private $productUnit;
@@ -64,11 +64,9 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="unit_type", type="string", length=0, nullable=false, options={"default"="'I'","comment"="Integer, Fractioned"})
-     * @Groups({"pruduct_read"})
+     * @Groups({"pruduct_read","product_unity_read"})
      */
     private $unitType = 'I';
-
-
 
     /**
      * Get the value of id
