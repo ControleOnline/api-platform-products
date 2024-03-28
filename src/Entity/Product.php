@@ -38,7 +38,7 @@ use ApiPlatform\Metadata\ApiResource;
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['pruduct_read']],
+    normalizationContext: ['groups' => ['product_read']],
     denormalizationContext: ['groups' => ['product_write']]
 )]
 
@@ -51,7 +51,7 @@ class Product
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"pruduct_read"})
+     * @Groups({"product_read"})
 
      */
     private $id;
@@ -60,8 +60,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="product", type="string", length=255, nullable=false)
-     * @Groups({"pruduct_read","product_write"})
-
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
      */
     private $product;
 
@@ -69,7 +68,7 @@ class Product
      * @var string|null
      *
      * @ORM\Column(name="sku", type="string", length=32, nullable=true, options={"default"="NULL"})
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $sku = NULL;
@@ -78,7 +77,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="type", type="string", length=0, nullable=false, options={"default"="'product'"})
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $type = 'product';
@@ -87,7 +86,7 @@ class Product
      * @var float
      *
      * @ORM\Column(name="price", type="float", precision=10, scale=0, nullable=false)
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $price = 0;
@@ -96,7 +95,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="product_condition", type="string", length=0, nullable=false, options={"default"="'new'"})
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $productCondition = 'new';
@@ -106,7 +105,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="description", type="string", length=0, nullable=false)
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $description = '';
@@ -115,7 +114,7 @@ class Product
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $active = true;
@@ -127,7 +126,7 @@ class Product
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
      * })
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
 
      */
     private $company;
@@ -139,7 +138,7 @@ class Product
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_unit_id", referencedColumnName="id")
      * })
-     * @Groups({"pruduct_read","product_write"})
+     * @Groups({"product_read","order_product_read","order_read","product_write"})
      */
     private $productUnit;
 
