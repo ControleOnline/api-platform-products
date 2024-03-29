@@ -7,9 +7,10 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * ProductGroupProducts
  *
- * @ORM\Table(name="product_group_products")
+ * @ORM\Table(name="product_group_product")
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupProductRepository")
  */
+
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -20,7 +21,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 
- #[ApiResource(
+#[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
         new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_write']]),
@@ -29,10 +30,10 @@ use ApiPlatform\Metadata\ApiFilter;
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product_group_read']],
-    denormalizationContext: ['groups' => ['product_group_write']]
+    normalizationContext: ['groups' => ['product_group_product_read']],
+    denormalizationContext: ['groups' => ['product_group_product_write']]
 )]
-class ProductGroupProducts
+class ProductGroupProduct
 {
     /**
      * @var int
@@ -40,6 +41,7 @@ class ProductGroupProducts
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
      */
     private $id;
 
@@ -48,6 +50,8 @@ class ProductGroupProducts
      *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $product;
 
@@ -56,6 +60,8 @@ class ProductGroupProducts
      *
      * @ORM\ManyToOne(targetEntity="ProductGroup")
      * @ORM\JoinColumn(name="product_group_id", referencedColumnName="id", nullable=true)
+     * @Groups({"product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $productGroup;
 
@@ -63,6 +69,8 @@ class ProductGroupProducts
      * @var string
      *
      * @ORM\Column(name="product_type", type="string", columnDefinition="ENUM('feedstock', 'component', 'package')", nullable=false)
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $productType;
 
@@ -71,6 +79,8 @@ class ProductGroupProducts
      *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=false)
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $productChild;
 
@@ -78,6 +88,8 @@ class ProductGroupProducts
      * @var float
      *
      * @ORM\Column(name="quantity", type="float", precision=10, scale=2, nullable=false, options={"default"="1.00"})
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $quantity = 0;
 
@@ -85,6 +97,8 @@ class ProductGroupProducts
      * @var float
      *
      * @ORM\Column(name="price", type="float", precision=10, scale=2, nullable=false)
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $price;
 
@@ -92,6 +106,8 @@ class ProductGroupProducts
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
+     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+
      */
     private $active = true;
 

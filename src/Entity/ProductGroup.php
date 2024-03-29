@@ -12,6 +12,9 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping\OneToMany;
 
 /**
  * ProductGroup
@@ -105,6 +108,19 @@ class ProductGroup
      */
 
     private $groupOrder;
+
+    /**
+     * @var Collection|ProductGroupProduct[]
+     *
+     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productGroup", orphanRemoval=true)
+     * @Groups({"product_group_read","product_group_write"})
+     */
+    private $products;
+
+    public function __construct()
+    {
+        $this->products = new ArrayCollection();
+    }
 
     /**
      * Get the value of id
@@ -248,5 +264,35 @@ class ProductGroup
     public function getActive(): ?bool
     {
         return $this->active;
+    }
+
+    /**
+     * @return Collection|ProductGroupProduct[]
+     */
+    public function getProducts(): Collection
+    {
+        return $this->products;
+    }
+
+    public function addProduct(ProductGroupProduct $product): self
+    {
+        if (!$this->products->contains($product)) {
+            $this->products[] = $product;
+            $product->setProductGroup($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProduct(ProductGroupProduct $product): self
+    {
+        if ($this->products->removeElement($product)) {
+            // set the owning side to null (unless already changed)
+            if ($product->getProductGroup() === $this) {
+                $product->setProductGroup(null);
+            }
+        }
+
+        return $this;
     }
 }
