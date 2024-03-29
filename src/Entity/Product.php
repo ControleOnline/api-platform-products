@@ -5,21 +5,15 @@ namespace ControleOnline\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\ProductUnity;
-
-
-use ApiPlatform\Metadata\ApiProperty;
-use ApiPlatform\Metadata\ApiFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
-
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 
 
 /**
@@ -52,8 +46,9 @@ class Product
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_read"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
+
     private $id;
 
     /**
@@ -62,6 +57,8 @@ class Product
      * @ORM\Column(name="product", type="string", length=255, nullable=false)
      * @Groups({"product_read","order_product_read","order_read","product_write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
+
     private $product;
 
     /**
@@ -69,8 +66,9 @@ class Product
      *
      * @ORM\Column(name="sku", type="string", length=32, nullable=true, options={"default"="NULL"})
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['sku' => 'exact'])]
+
     private $sku = NULL;
 
     /**
@@ -78,8 +76,8 @@ class Product
      *
      * @ORM\Column(name="type", type="string", length=0, nullable=false, options={"default"="'product'"})
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['type' => 'exact'])]
     private $type = 'product';
 
     /**
@@ -87,7 +85,6 @@ class Product
      *
      * @ORM\Column(name="price", type="float", precision=10, scale=0, nullable=false)
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
     private $price = 0;
 
@@ -96,8 +93,9 @@ class Product
      *
      * @ORM\Column(name="product_condition", type="string", length=0, nullable=false, options={"default"="'new'"})
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCondition' => 'exact'])]
+
     private $productCondition = 'new';
 
 
@@ -106,7 +104,6 @@ class Product
      *
      * @ORM\Column(name="description", type="string", length=0, nullable=false)
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
     private $description = '';
 
@@ -115,8 +112,9 @@ class Product
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['active' => 'exact'])]
+
     private $active = true;
 
     /**
@@ -127,7 +125,6 @@ class Product
      *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
      * })
      * @Groups({"product_read","order_product_read","order_read","product_write"})
-
      */
     private $company;
 

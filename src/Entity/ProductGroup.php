@@ -3,6 +3,15 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 
 /**
  * ProductGroup
@@ -10,6 +19,19 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(name="product_group")
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupRepository")
  */
+
+#[ApiResource(
+    operations: [
+        new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
+        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_write']]),
+        new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
+        new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
+    ],
+    formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
+    normalizationContext: ['groups' => ['product_group_read']],
+    denormalizationContext: ['groups' => ['product_group_write']]
+)]
 class ProductGroup
 {
     /**
@@ -18,27 +40,36 @@ class ProductGroup
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @Groups({"product_group_read","product_group_write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     private $id;
 
     /**
      * @var string
      *
      * @ORM\Column(name="product_group", type="string", length=255, nullable=false)
+     * @Groups({"product_group_read","product_group_write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
+
     private $productGroup;
 
     /**
      * @var string
      *
      * @ORM\Column(name="price_calculation", type="string", length=0, nullable=false, options={"default"="'sum'"})
+     * @Groups({"product_group_read","product_group_write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
+
     private $priceCalculation = 'sum';
 
     /**
      * @var bool
      *
      * @ORM\Column(name="required", type="boolean", nullable=false)
+     * @Groups({"product_group_read","product_group_write"})
      */
     private $required = 0;
 
@@ -46,6 +77,7 @@ class ProductGroup
      * @var int|null
      *
      * @ORM\Column(name="minimum", type="integer", nullable=true, options={"default"="NULL"})
+     * @Groups({"product_group_read","product_group_write"})
      */
     private $minimum = NULL;
 
@@ -53,6 +85,7 @@ class ProductGroup
      * @var int|null
      *
      * @ORM\Column(name="maximum", type="integer", nullable=true, options={"default"="NULL"})
+     * @Groups({"product_group_read","product_group_write"})
      */
     private $maximum = NULL;
 
@@ -60,6 +93,7 @@ class ProductGroup
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
+     * @Groups({"product_group_read","product_group_write"})
      */
     private $active = true;
 
@@ -67,10 +101,10 @@ class ProductGroup
      * @var int
      *
      * @ORM\Column(name="group_order", type="integer", nullable=false)
+     * @Groups({"product_group_read","product_group_write"})
      */
+
     private $groupOrder;
-
-
 
     /**
      * Get the value of id
