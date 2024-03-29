@@ -3,14 +3,35 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use ControleOnline\Entity\ProductGroup;
-use ControleOnline\Entity\Product;
+
 /**
  * ProductGroupProducts
  *
- * @ORM\Table(name="product_group_products", uniqueConstraints={@ORM\UniqueConstraint(name="product_group", columns={"product_group", "product_relation", "product_id"})}, indexes={@ORM\Index(name="product_id", columns={"product_id"}), @ORM\Index(name="IDX_E9E36809CC9C3F99", columns={"product_group"})})
+ * @ORM\Table(name="product_group_products")
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupProductRepository")
  */
+use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
+
+ #[ApiResource(
+    operations: [
+        new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
+        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_write']]),
+        new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
+        new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
+    ],
+    formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
+    normalizationContext: ['groups' => ['product_group_read']],
+    denormalizationContext: ['groups' => ['product_group_write']]
+)]
 class ProductGroupProducts
 {
     /**
@@ -23,18 +44,49 @@ class ProductGroupProducts
     private $id;
 
     /**
-     * @var string
+     * @var Product
      *
-     * @ORM\Column(name="product_relation", type="string", length=0, nullable=false)
+     * @ORM\ManyToOne(targetEntity="Product")
+     * @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
      */
-    private $productRelation;
+    private $product;
 
     /**
-     * @var int|null
+     * @var ProductGroup
      *
-     * @ORM\Column(name="product_quantity", type="integer", nullable=true, options={"default"="1"})
+     * @ORM\ManyToOne(targetEntity="ProductGroup")
+     * @ORM\JoinColumn(name="product_group_id", referencedColumnName="id", nullable=true)
      */
-    private $productQuantity = 1;
+    private $productGroup;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="product_type", type="string", columnDefinition="ENUM('feedstock', 'component', 'package')", nullable=false)
+     */
+    private $productType;
+
+    /**
+     * @var Product
+     *
+     * @ORM\ManyToOne(targetEntity="Product")
+     * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=false)
+     */
+    private $productChild;
+
+    /**
+     * @var float
+     *
+     * @ORM\Column(name="quantity", type="float", precision=10, scale=2, nullable=false, options={"default"="1.00"})
+     */
+    private $quantity = 0;
+
+    /**
+     * @var float
+     *
+     * @ORM\Column(name="price", type="float", precision=10, scale=2, nullable=false)
+     */
+    private $price;
 
     /**
      * @var bool
@@ -44,28 +96,6 @@ class ProductGroupProducts
     private $active = true;
 
     /**
-     * @var ProductGroup
-     *
-     * @ORM\ManyToOne(targetEntity="ProductGroup")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_group", referencedColumnName="id")
-     * })
-     */
-    private $productGroup;
-
-    /**
-     * @var Product
-     *
-     * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     * })
-     */
-    private $product;
-
-
-
-    /**
      * Get the value of id
      */
     public function getId(): int
@@ -73,48 +103,109 @@ class ProductGroupProducts
         return $this->id;
     }
 
-    /**
-     * Set the value of id
-     */
-    public function setId(int $id): self
+
+
+    public function getProduct(): Product
     {
-        $this->id = $id;
+        return $this->product;
+    }
+
+    /**
+     * Set the value of product
+     */
+    public function setProduct(Product $product): self
+    {
+        $this->product = $product;
 
         return $this;
     }
 
     /**
-     * Get the value of productRelation
+     * Get the value of productGroup
      */
-    public function getProductRelation(): string
+    public function getProductGroup(): ?ProductGroup
     {
-        return $this->productRelation;
+        return $this->productGroup;
     }
 
     /**
-     * Set the value of productRelation
+     * Set the value of productGroup
      */
-    public function setProductRelation(string $productRelation): self
+    public function setProductGroup(?ProductGroup $productGroup): self
     {
-        $this->productRelation = $productRelation;
+        $this->productGroup = $productGroup;
 
         return $this;
     }
 
     /**
-     * Get the value of productQuantity
+     * Get the value of productChild
      */
-    public function getProductQuantity(): ?int
+    public function getProductChild(): Product
     {
-        return $this->productQuantity;
+        return $this->productChild;
     }
 
     /**
-     * Set the value of productQuantity
+     * Set the value of productChild
      */
-    public function setProductQuantity(?int $productQuantity): self
+    public function setProductChild(Product $productChild): self
     {
-        $this->productQuantity = $productQuantity;
+        $this->productChild = $productChild;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of quantity
+     */
+    public function getQuantity(): float
+    {
+        return $this->quantity;
+    }
+
+    /**
+     * Set the value of quantity
+     */
+    public function setQuantity(float $quantity): self
+    {
+        $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of productType
+     */
+    public function getProductType(): string
+    {
+        return $this->productType;
+    }
+
+    /**
+     * Set the value of productType
+     */
+    public function setProductType(string $productType): self
+    {
+        $this->productType = $productType;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of price
+     */
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    /**
+     * Set the value of price
+     */
+    public function setPrice(float $price): self
+    {
+        $this->price = $price;
 
         return $this;
     }
@@ -135,46 +226,5 @@ class ProductGroupProducts
         $this->active = $active;
 
         return $this;
-    }
-
-    /**
-     * Get the value of productGroup
-     */
-    public function getProductGroup(): ProductGroup
-    {
-        return $this->productGroup;
-    }
-
-    /**
-     * Set the value of productGroup
-     */
-    public function setProductGroup(ProductGroup $productGroup): self
-    {
-        $this->productGroup = $productGroup;
-
-        return $this;
-    }
-
-    /**
-     * Get the value of product
-     */
-    public function getProduct(): Product
-    {
-        return $this->product;
-    }
-
-    /**
-     * Set the value of product
-     */
-    public function setProduct(Product $product): self
-    {
-        $this->product = $product;
-
-        return $this;
-    }
-
-    public function getActive(): ?bool
-    {
-        return $this->active;
     }
 }
