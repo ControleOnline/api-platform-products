@@ -5,7 +5,7 @@ namespace ControleOnline\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * ProductGroupProducts
+ * ProductGroupProduct
  *
  * @ORM\Table(name="product_group_product")
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupProductRepository")
@@ -24,7 +24,7 @@ use ApiPlatform\Metadata\ApiFilter;
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
-        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_write']]),
+        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_product_write']]),
         new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
@@ -43,6 +43,8 @@ class ProductGroupProduct
      * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
+
     private $id;
 
     /**
@@ -51,8 +53,9 @@ class ProductGroupProduct
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
      * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
+
     private $product;
 
     /**
@@ -61,8 +64,9 @@ class ProductGroupProduct
      * @ORM\ManyToOne(targetEntity="ProductGroup")
      * @ORM\JoinColumn(name="product_group_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product_read","product_group_write","product_group_product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
+
     private $productGroup;
 
     /**
@@ -70,8 +74,9 @@ class ProductGroupProduct
      *
      * @ORM\Column(name="product_type", type="string", columnDefinition="ENUM('feedstock', 'component', 'package')", nullable=false)
      * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
-
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productType' => 'exact'])]
+
     private $productType;
 
     /**

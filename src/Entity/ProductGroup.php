@@ -189,7 +189,7 @@ class ProductGroup
      */
     public function getMinimum(): ?int
     {
-        return $this->minimum;
+        return (float) $this->minimum;
     }
 
     /**
@@ -207,7 +207,7 @@ class ProductGroup
      */
     public function getMaximum(): ?int
     {
-        return $this->maximum;
+        return (float) $this->maximum;
     }
 
     /**
