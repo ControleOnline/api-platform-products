@@ -105,7 +105,7 @@ class ProductGroupProduct
      * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
 
      */
-    private $price;
+    private $price = 0;
 
     /**
      * @var bool
