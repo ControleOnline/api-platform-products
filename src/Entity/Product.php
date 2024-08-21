@@ -45,7 +45,7 @@ class Product
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_read"})
+     * @Groups({"product_read","order_product_read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
 
@@ -55,7 +55,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="product", type="string", length=255, nullable=false)
-     * @Groups({"product_read","product_group_product_read","product_group_read","order_product_read","order_read","product_write"})
+     * @Groups({"product_read","product_group_product_read","order_product_read","product_group_read","order_product_read","order_read","product_write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
 
