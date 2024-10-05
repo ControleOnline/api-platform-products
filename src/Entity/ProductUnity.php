@@ -35,8 +35,8 @@ use ApiPlatform\Metadata\ApiResource;
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product_unity_read']],
-    denormalizationContext: ['groups' => ['product_unity_write']]
+    normalizationContext: ['groups' => ['product_unity:read']],
+    denormalizationContext: ['groups' => ['product_unity:write']]
 )]
 class ProductUnity
 {
@@ -46,7 +46,7 @@ class ProductUnity
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_read","product_group_product_read","product_group_read","product_unity_read"})
+     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
 
      */
     private $id;
@@ -55,7 +55,7 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="product_unit", type="string", length=3, nullable=false)
-     * @Groups({"product_read","product_group_product_read","product_group_read","product_unity_read"})
+     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
 
      */
     private $productUnit;
@@ -64,7 +64,7 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="unit_type", type="string", length=0, nullable=false, options={"default"="'I'","comment"="Integer, Fractioned"})
-     * @Groups({"product_read","product_group_product_read","product_group_read","product_unity_read"})
+     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
      */
     private $unitType = 'I';
 

@@ -24,14 +24,14 @@ use ApiPlatform\Metadata\ApiFilter;
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
-        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_product_write']]),
+        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group_product:write']]),
         new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product_group_product_read']],
-    denormalizationContext: ['groups' => ['product_group_product_write']]
+    normalizationContext: ['groups' => ['product_group_product:read']],
+    denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 class ProductGroupProduct
 {
@@ -41,7 +41,7 @@ class ProductGroupProduct
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
 
@@ -52,7 +52,7 @@ class ProductGroupProduct
      *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
 
@@ -63,7 +63,7 @@ class ProductGroupProduct
      *
      * @ORM\ManyToOne(targetEntity="ProductGroup")
      * @ORM\JoinColumn(name="product_group_id", referencedColumnName="id", nullable=true)
-     * @Groups({"product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
 
@@ -73,7 +73,7 @@ class ProductGroupProduct
      * @var string
      *
      * @ORM\Column(name="product_type", type="string", columnDefinition="ENUM('feedstock', 'component', 'package')", nullable=false)
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productType' => 'exact'])]
 
@@ -84,7 +84,7 @@ class ProductGroupProduct
      *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=false)
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
 
      */
     private $productChild;
@@ -93,7 +93,7 @@ class ProductGroupProduct
      * @var float
      *
      * @ORM\Column(name="quantity", type="float", precision=10, scale=2, nullable=false, options={"default"="1.00"})
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
 
      */
     private $quantity = 0;
@@ -102,7 +102,7 @@ class ProductGroupProduct
      * @var float
      *
      * @ORM\Column(name="price", type="float", precision=10, scale=2, nullable=false)
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
 
      */
     private $price = 0;
@@ -111,7 +111,7 @@ class ProductGroupProduct
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
-     * @Groups({"product_group_read","product_group_product_read","product_group_write","product_group_product_write"})
+     * @Groups({"product_group:read","product_group_product:read","product_group:write","product_group_product:write"})
 
      */
     private $active = true;
