@@ -113,7 +113,7 @@ class ProductGroup
      * @var Collection|ProductGroupProduct[]
      *
      * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productGroup", orphanRemoval=true)
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:write"})
      */
     private $products;
 
