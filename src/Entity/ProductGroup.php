@@ -115,6 +115,8 @@ class ProductGroup
      * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productGroup", orphanRemoval=true)
      * @Groups({"product_group:write"})
      */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['products.type' => 'exact'])]
+
     private $products;
 
     public function __construct()
