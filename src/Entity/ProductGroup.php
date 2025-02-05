@@ -120,6 +120,15 @@ class ProductGroup
      */
     private $products;
 
+    /**
+     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Product")
+     * @ORM\JoinColumn(nullable=false)
+     * @Groups({"product_group:read","product_group:write"})
+     */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productParent' => 'exact'])]
+
+    private $productParent;
+
     public function __construct()
     {
         $this->products = new ArrayCollection();
@@ -295,6 +304,24 @@ class ProductGroup
                 $product->setProductGroup(null);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Get the value of productParent
+     */
+    public function getProductParent()
+    {
+        return $this->productParent;
+    }
+
+    /**
+     * Set the value of productParent
+     */
+    public function setProductParent($productParent): self
+    {
+        $this->productParent = $productParent;
 
         return $this;
     }
