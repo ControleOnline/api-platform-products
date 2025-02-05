@@ -26,7 +26,10 @@ use Doctrine\ORM\Mapping\OneToMany;
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
-        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_group:write']]),
+        new Put(
+            security: 'is_granted(\'ROLE_CLIENT\')',
+            denormalizationContext: ['groups' => ['product_group:write']]
+        ),
         new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
