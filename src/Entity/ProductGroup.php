@@ -107,7 +107,7 @@ class ProductGroup
      * @Groups({"product_group:read","product_group:write"})
      */
 
-    private $groupOrder;
+    private $groupOrder = 0;
 
     /**
      * @var Collection|ProductGroupProduct[]
