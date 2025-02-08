@@ -3,8 +3,18 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use ControleOnline\Entity\Category;
-use ControleOnline\Entity\Product;
+use ControleOnline\Entity\People;
+use ControleOnline\Entity\ProductUnity;
+use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
+
 
 /**
  * ProductCategory
@@ -12,6 +22,22 @@ use ControleOnline\Entity\Product;
  * @ORM\Table(name="product_category", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "category_id"})}, indexes={@ORM\Index(name="category_id", columns={"category_id"}), @ORM\Index(name="IDX_CDFC73564584665A", columns={"product_id"})})
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductCategoryRepository")
  */
+
+#[ApiResource(
+    operations: [
+        new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
+        new Put(
+            security: 'is_granted(\'ROLE_CLIENT\')',
+            denormalizationContext: ['groups' => ['product_category:write']]
+        ),
+        new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
+        new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
+    ],
+    formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
+    normalizationContext: ['groups' => ['product_category:read']],
+    denormalizationContext: ['groups' => ['product_category:write']]
+)]
 class ProductCategory
 {
     /**
@@ -20,6 +46,7 @@ class ProductCategory
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @Groups({"product_category:read","product_category:read"})
      */
     private $id;
 
@@ -30,6 +57,7 @@ class ProductCategory
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
      * })
+     * @Groups({"product_category:read","product_category:read"})
      */
     private $category;
 
@@ -40,6 +68,7 @@ class ProductCategory
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      * })
+     * @Groups({"product_category:read","product_category:read"})
      */
     private $product;
 
