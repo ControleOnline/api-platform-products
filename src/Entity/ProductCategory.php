@@ -46,7 +46,7 @@ class ProductCategory
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_category:read","product_category:read"})
+     * @Groups({"product_category:read"})
      */
     private $id;
 
@@ -57,7 +57,7 @@ class ProductCategory
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product_category:read"})
+     * @Groups({"product_category:read","product_category:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['category' => 'exact'])]
 
@@ -70,7 +70,7 @@ class ProductCategory
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product_category:read"})
+     * @Groups({"product_category:read","product_category:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
 
