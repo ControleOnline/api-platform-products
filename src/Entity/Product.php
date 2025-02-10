@@ -144,7 +144,7 @@ class Product
      */
     private $productUnit;
 
-     /**
+    /**
      * @var Queue
      *
      * @ORM\ManyToOne(targetEntity="Queue")
@@ -343,7 +343,7 @@ class Product
     /**
      * Get the value of queue
      */
-    public function getQueue(): Queue
+    public function getQueue(): ?Queue
     {
         return $this->queue;
     }
