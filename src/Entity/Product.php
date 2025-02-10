@@ -339,4 +339,22 @@ class Product
 
         return $this;
     }
+
+    /**
+     * Get the value of queue
+     */
+    public function getQueue(): Queue
+    {
+        return $this->queue;
+    }
+
+    /**
+     * Set the value of queue
+     */
+    public function setQueue(Queue $queue): self
+    {
+        $this->queue = $queue;
+
+        return $this;
+    }
 }
