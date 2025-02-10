@@ -144,6 +144,17 @@ class Product
      */
     private $productUnit;
 
+     /**
+     * @var Queue
+     *
+     * @ORM\ManyToOne(targetEntity="Queue")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="queue_id", referencedColumnName="id")
+     * })
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     */
+    private $queue;
+
     /**
      * Get the value of id
      */
