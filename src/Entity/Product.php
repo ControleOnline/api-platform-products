@@ -343,7 +343,7 @@ class Product
     /**
      * Get the value of queue
      */
-    public function getQueue(): ?Queue
+    public function getQueue()
     {
         return $this->queue;
     }
@@ -351,7 +351,7 @@ class Product
     /**
      * Set the value of queue
      */
-    public function setQueue(Queue $queue): self
+    public function setQueue($queue): self
     {
         $this->queue = $queue;
 
