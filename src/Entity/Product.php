@@ -58,7 +58,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="product", type="string", length=255, nullable=false)
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'partial'])]
 
@@ -68,7 +68,7 @@ class Product
      * @var string|null
      *
      * @ORM\Column(name="sku", type="string", length=32, nullable=true, options={"default"="NULL"})
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['sku' => 'partial'])]
 
@@ -78,7 +78,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="type", type="string", length=0, nullable=false, options={"default"="'product'"})
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['type' => 'exact'])]
     private $type = 'product';
@@ -87,7 +87,7 @@ class Product
      * @var float
      *
      * @ORM\Column(name="price", type="float", precision=10, scale=0, nullable=false)
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     private $price = 0;
 
@@ -95,7 +95,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="product_condition", type="string", length=0, nullable=false, options={"default"="'new'"})
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCondition' => 'exact'])]
 
@@ -106,7 +106,7 @@ class Product
      * @var string
      *
      * @ORM\Column(name="description", type="string", length=0, nullable=false)
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     private $description = '';
 
@@ -114,7 +114,7 @@ class Product
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['active' => 'exact'])]
 
@@ -127,7 +127,7 @@ class Product
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
 
@@ -140,7 +140,7 @@ class Product
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_unit_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     private $productUnit;
 
@@ -151,7 +151,7 @@ class Product
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="queue_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order:read","order_details:read","order:write","product:write"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     private $queue;
 
