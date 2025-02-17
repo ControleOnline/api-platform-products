@@ -46,7 +46,7 @@ class ProductGroup
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     private $id;
@@ -55,7 +55,7 @@ class ProductGroup
      * @var string
      *
      * @ORM\Column(name="product_group", type="string", length=255, nullable=false)
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
 
@@ -65,7 +65,7 @@ class ProductGroup
      * @var string
      *
      * @ORM\Column(name="price_calculation", type="string", length=0, nullable=false, options={"default"="'sum'"})
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
 
@@ -75,7 +75,7 @@ class ProductGroup
      * @var bool
      *
      * @ORM\Column(name="required", type="boolean", nullable=false)
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     private $required = 0;
 
@@ -83,7 +83,7 @@ class ProductGroup
      * @var int|null
      *
      * @ORM\Column(name="minimum", type="integer", nullable=true, options={"default"="NULL"})
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     private $minimum = NULL;
 
@@ -91,7 +91,7 @@ class ProductGroup
      * @var int|null
      *
      * @ORM\Column(name="maximum", type="integer", nullable=true, options={"default"="NULL"})
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     private $maximum = NULL;
 
@@ -99,7 +99,7 @@ class ProductGroup
      * @var bool
      *
      * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     private $active = true;
 
@@ -107,7 +107,7 @@ class ProductGroup
      * @var int
      *
      * @ORM\Column(name="group_order", type="integer", nullable=false)
-     * @Groups({"product_group:read","product_group:write"})
+     * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
 
     private $groupOrder = 0;
