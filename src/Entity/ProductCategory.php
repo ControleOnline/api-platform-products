@@ -60,6 +60,8 @@ class ProductCategory
      * @Groups({"product_category:read","product_category:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['category' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.company' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.context' => 'exact'])]
 
     private $category;
 
