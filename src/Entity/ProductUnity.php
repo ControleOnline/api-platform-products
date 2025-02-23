@@ -46,7 +46,7 @@ class ProductUnity
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
+     * @Groups({"product:read","product_details:read","product_group_product:read","product_group:read","product_unity:read"})
 
      */
     private $id;
@@ -55,7 +55,7 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="product_unit", type="string", length=3, nullable=false)
-     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
+     * @Groups({"product:read","product_details:read","product_group_product:read","product_group:read","product_unity:read"})
 
      */
     private $productUnit;
@@ -64,7 +64,7 @@ class ProductUnity
      * @var string
      *
      * @ORM\Column(name="unit_type", type="string", length=0, nullable=false, options={"default"="'I'","comment"="Integer, Fractioned"})
-     * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
+     * @Groups({"product:read","product_details:read","product_group_product:read","product_group:read","product_unity:read"})
      */
     private $unitType = 'I';
 

@@ -15,10 +15,10 @@ use ApiPlatform\Metadata\ApiFilter;
 
 
 /**
- * ProductCategory
+ * ProductFile
  *
- * @ORM\Table(name="product_category", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "category_id"})}, indexes={@ORM\Index(name="category_id", columns={"category_id"}), @ORM\Index(name="IDX_CDFC73564584665A", columns={"product_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductCategoryRepository")
+ * @ORM\Table(name="product_file", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "file_id"})}, indexes={@ORM\Index(name="file_id", columns={"file_id"}), @ORM\Index(name="IDX_CDFC73564584665B", columns={"product_id"})})
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductFileRepository")
  */
 
 #[ApiResource(
@@ -26,17 +26,17 @@ use ApiPlatform\Metadata\ApiFilter;
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
         new Put(
             security: 'is_granted(\'ROLE_CLIENT\')',
-            denormalizationContext: ['groups' => ['product_category:write']]
+            denormalizationContext: ['groups' => ['product_file:write']]
         ),
         new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
         new GetCollection(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')')
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product_category:read']],
-    denormalizationContext: ['groups' => ['product_category:write']]
+    normalizationContext: ['groups' => ['product_file:read']],
+    denormalizationContext: ['groups' => ['product_file:write']]
 )]
-class ProductCategory
+class ProductFile
 {
     /**
      * @var int
@@ -44,24 +44,23 @@ class ProductCategory
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product_category:read"})
+     * @Groups({"product_file:read"})
      */
     private $id;
 
     /**
-     * @var ControleOnline\Entity\Category
+     * @var ControleOnline\Entity\File
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
+     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\File")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="file_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product_category:write"})
+     * @Groups({"product_file:read","product_file:write"})
      */
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['category' => 'exact'])]
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.company' => 'exact'])]
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.context' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['file' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['file.fileType' => 'exact'])]
 
-    private $category;
+    private $file;
 
     /**
      * @var Product
@@ -70,7 +69,7 @@ class ProductCategory
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      * })
-     * @Groups({"product_category:read","product_category:write"})
+     * @Groups({"product_file:read","product_file:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
 
@@ -85,19 +84,19 @@ class ProductCategory
     }
 
     /**
-     * Get the value of category
+     * Get the value of file
      */
-    public function getCategory(): Category
+    public function getFile(): File
     {
-        return $this->category;
+        return $this->file;
     }
 
     /**
-     * Set the value of category
+     * Set the value of file
      */
-    public function setCategory(Category $category): self
+    public function setFile(File $file): self
     {
-        $this->category = $category;
+        $this->file = $file;
 
         return $this;
     }
