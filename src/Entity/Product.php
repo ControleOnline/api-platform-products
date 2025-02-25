@@ -69,7 +69,7 @@ class Product
 
     /**
      * @ORM\OneToMany(targetEntity="ProductFile", mappedBy="product")
-     * @Groups({"product_details:read"})
+     * @Groups({"product_details:read","product_category:read"})
      */
     private $productFiles;
 
