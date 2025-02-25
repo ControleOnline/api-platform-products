@@ -13,6 +13,7 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use Doctrine\Common\Collections\Collection;
 
@@ -70,6 +71,9 @@ class Product
      * @ORM\OneToMany(targetEntity="ProductFile", mappedBy="product")
      * @Groups({"product:read","product_category:read"})
      */
+    #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]
+
     private $productFiles;
 
     /**
