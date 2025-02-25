@@ -50,7 +50,7 @@ class ProductFile
 
     /**
      * @var ControleOnline\Entity\File
-     * @ORM\Id
+     *
      * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\File")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="file_id", referencedColumnName="id")
@@ -64,7 +64,7 @@ class ProductFile
 
     /**
      * @var Product
-     * @ORM\Id
+     *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")

@@ -50,7 +50,7 @@ class ProductCategory
 
     /**
      * @var ControleOnline\Entity\Category
-     * @ORM\Id
+     *
      * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
@@ -65,7 +65,7 @@ class ProductCategory
 
     /**
      * @var Product
-     * @ORM\Id
+     *
      * @ORM\ManyToOne(targetEntity="Product")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
