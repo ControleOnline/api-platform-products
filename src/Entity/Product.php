@@ -77,6 +77,13 @@ class Product
     private $productFiles;
 
     /**
+     * @ORM\OneToMany(targetEntity="ProductCategory", mappedBy="product")
+     */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCategory.category' => 'exact'])]
+
+    private $productCategory;
+
+    /**
      * @var string|null
      *
      * @ORM\Column(name="sku", type="string", length=32, nullable=true, options={"default"="NULL"})
@@ -170,6 +177,7 @@ class Product
     public function __construct()
     {
         $this->productFiles = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     /**
@@ -381,5 +389,13 @@ class Product
     public function getProductFiles(): Collection
     {
         return $this->productFiles;
+    }
+
+    /**
+     * @return Collection|ProductCategory[]
+     */
+    public function getProductCategory(): Collection
+    {
+        return $this->productCategory;
     }
 }
