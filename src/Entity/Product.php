@@ -16,6 +16,8 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use Doctrine\Common\Collections\Collection;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ControleOnline\Filter\RandomOrderFilter;
 
 /**
  * Product
@@ -42,6 +44,8 @@ use Doctrine\Common\Collections\Collection;
     denormalizationContext: ['groups' => ['product:write']]
 )]
 
+#[ApiFilter(OrderFilter::class, properties: ['id' => 'ASC', 'product' => 'ASC', 'price' => 'DESC'])]
+#[ApiFilter(RandomOrderFilter::class)]
 
 class Product
 {
