@@ -129,6 +129,17 @@ class Product
      */
     private $description = '';
 
+
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="featured", type="boolean", nullable=false, options={"default"="0"})
+     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
+     */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['featured' => 'exact'])]
+
+    private $featured = false;
+
     /**
      * @var bool
      *
@@ -397,5 +408,23 @@ class Product
     public function getProductCategory(): Collection
     {
         return $this->productCategory;
+    }
+
+    /**
+     * Get the value of featured
+     */
+    public function getFeatured()
+    {
+        return $this->featured;
+    }
+
+    /**
+     * Set the value of featured
+     */
+    public function setFeatured($featured): self
+    {
+        $this->featured = $featured;
+
+        return $this;
     }
 }
