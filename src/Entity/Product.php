@@ -158,9 +158,9 @@ class Product
      */
     private $queue;
 
-    /**
-     * @var Collection|Product[]
-     * @ORM\OneToMany(targetEntity="Product", mappedBy="parentProduct")
+/**
+     * @var Collection|ProductGroupProduct[]
+     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productChild")
      * @Groups({"product_group_product:read"})
      */
     private $childProducts;
