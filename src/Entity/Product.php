@@ -160,7 +160,7 @@ class Product
 
 /**
      * @var Collection|ProductGroupProduct[]
-     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productChild")
+     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productChild", fetch="LAZY")
      * @Groups({"product_group_product:read"})
      */
     private $childProducts;
