@@ -158,20 +158,10 @@ class Product
      */
     private $queue;
 
-/**
-     * @var Collection|ProductGroupProduct[]
-     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productChild", fetch="LAZY")
-     * @Groups({"product_group_product:read"})
-     */
-    private $childProducts;
-
-
-
     public function __construct()
     {
         $this->productFiles = new \Doctrine\Common\Collections\ArrayCollection();
         $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
-        $this->childProducts = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     public function getId(): int
@@ -313,24 +303,6 @@ class Product
     public function setFeatured(bool $featured): self
     {
         $this->featured = $featured;
-        return $this;
-    }
-
-    public function getChildProducts(): Collection
-    {
-        return $this->childProducts;
-    }
-
-    public function addChildProduct(Product $childProduct): self
-    {
-
-        $this->childProducts->add($childProduct);
-        return $this;
-    }
-
-    public function removeChildProduct(Product $childProduct): self
-    {
-        $this->childProducts->removeElement($childProduct);
         return $this;
     }
 }
