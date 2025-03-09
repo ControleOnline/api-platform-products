@@ -191,10 +191,19 @@ class Product
      */
     private $queue;
 
+    /**
+     * @var Collection|Product[]
+     *
+     * @ORM\OneToMany(targetEntity="Product", mappedBy="parentProduct")
+     * @Groups({"product_group_product:read"})
+     */
+    private $childProducts;
+
     public function __construct()
     {
         $this->productFiles = new \Doctrine\Common\Collections\ArrayCollection();
         $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->childProducts = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     /**
@@ -433,4 +442,28 @@ class Product
 
         return $this;
     }
+
+    public function getChildProducts(): Collection
+{
+    return $this->childProducts;
+}
+
+public function addChildProduct(Product $childProduct): self
+{
+    if (!$this->childProducts->contains($childProduct)) {
+        $this->childProducts->add($childProduct);
+        $childProduct->setParentProduct($this);
+    }
+    return $this;
+}
+
+public function removeChildProduct(Product $childProduct): self
+{
+    if ($this->childProducts->removeElement($childProduct)) {
+        if ($childProduct->getParentProduct() === $this) {
+            $childProduct->setParentProduct(null);
+        }
+    }
+    return $this;
+}
 }

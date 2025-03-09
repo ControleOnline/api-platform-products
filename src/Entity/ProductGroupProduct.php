@@ -33,7 +33,7 @@ use ApiPlatform\Metadata\ApiFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')',)
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product_group_product:read']],
+    normalizationContext: ['max_depth' => 1, 'groups' => ['product_group_product:read']],
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 class ProductGroupProduct
@@ -86,7 +86,7 @@ class ProductGroupProduct
      * @var Product
      *
      * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=false)
+     * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
 
      */
