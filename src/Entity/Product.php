@@ -165,13 +165,7 @@ class Product
      */
     private $childProducts;
 
-    /**
-     * @var Product|null
-     * @ORM\ManyToOne(targetEntity="Product", inversedBy="childProducts")
-     * @ORM\JoinColumn(name="parent_product_id", referencedColumnName="id", nullable=true)
-     * @Groups({"product:read", "product:write"})
-     */
-    private $parentProduct;
+
 
     public function __construct()
     {
@@ -329,31 +323,14 @@ class Product
 
     public function addChildProduct(Product $childProduct): self
     {
-        if (!$this->childProducts->contains($childProduct)) {
-            $this->childProducts->add($childProduct);
-            $childProduct->setParentProduct($this);
-        }
+
+        $this->childProducts->add($childProduct);
         return $this;
     }
 
     public function removeChildProduct(Product $childProduct): self
     {
-        if ($this->childProducts->removeElement($childProduct)) {
-            if ($childProduct->getParentProduct() === $this) {
-                $childProduct->setParentProduct(null);
-            }
-        }
-        return $this;
-    }
-
-    public function getParentProduct(): ?Product
-    {
-        return $this->parentProduct;
-    }
-
-    public function setParentProduct(?Product $parentProduct): self
-    {
-        $this->parentProduct = $parentProduct;
+        $this->childProducts->removeElement($childProduct);
         return $this;
     }
 }
