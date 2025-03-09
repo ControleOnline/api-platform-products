@@ -444,26 +444,19 @@ class Product
     }
 
     public function getChildProducts(): Collection
-{
-    return $this->childProducts;
-}
+    {
+        return $this->childProducts;
+    }
 
-public function addChildProduct(Product $childProduct): self
-{
-    if (!$this->childProducts->contains($childProduct)) {
+    public function addChildProduct(Product $childProduct): self
+    {
         $this->childProducts->add($childProduct);
-        $childProduct->setParentProduct($this);
+        return $this;
     }
-    return $this;
-}
 
-public function removeChildProduct(Product $childProduct): self
-{
-    if ($this->childProducts->removeElement($childProduct)) {
-        if ($childProduct->getParentProduct() === $this) {
-            $childProduct->setParentProduct(null);
-        }
+    public function removeChildProduct(Product $childProduct): self
+    {
+        $this->childProducts->removeElement($childProduct);
+        return $this;
     }
-    return $this;
-}
 }
