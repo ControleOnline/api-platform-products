@@ -61,7 +61,7 @@ class Product
 
     /**
      * @ORM\OneToMany(targetEntity="ProductFile", mappedBy="product")
-     * @Groups({"product:read","product_category:read"})
+     * @Groups({"product:read","product_category:read","order_product:read"})
      */
     #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]

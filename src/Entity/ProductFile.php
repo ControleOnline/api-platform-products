@@ -44,7 +44,7 @@ class ProductFile
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"product:read","product_file:read","product_category:read"})
+     * @Groups({"product:read","order_product:read","product_file:read","product_category:read"})
      */
     private $id;
 
@@ -55,7 +55,7 @@ class ProductFile
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="file_id", referencedColumnName="id")
      * })
-     * @Groups({"product:read","product_file:read","product_file:write","product_category:read"})
+     * @Groups({"product:read","order_product:read","product_file:read","product_file:write","product_category:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['file' => 'exact'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['file.fileType' => 'exact'])]
