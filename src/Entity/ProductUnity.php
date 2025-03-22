@@ -71,7 +71,7 @@ class ProductUnity
     /**
      * Get the value of id
      */
-    public function getId(): int
+    public function getId()
     {
         return $this->id;
     }
@@ -79,7 +79,7 @@ class ProductUnity
     /**
      * Set the value of id
      */
-    public function setId(int $id): self
+    public function setId($id): self
     {
         $this->id = $id;
 

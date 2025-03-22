@@ -137,7 +137,7 @@ class ProductGroup
     /**
      * Get the value of id
      */
-    public function getId(): int
+    public function getId()
     {
         return $this->id;
     }
@@ -253,7 +253,7 @@ class ProductGroup
     /**
      * Get the value of groupOrder
      */
-    public function getGroupOrder(): int
+    public function getGroupOrder()
     {
         return $this->groupOrder;
     }
@@ -261,7 +261,7 @@ class ProductGroup
     /**
      * Set the value of groupOrder
      */
-    public function setGroupOrder(int $groupOrder): self
+    public function setGroupOrder($groupOrder): self
     {
         $this->groupOrder = $groupOrder;
 
