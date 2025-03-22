@@ -164,12 +164,12 @@ class Product
         $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
-    public function getId(): int
+    public function getId()
     {
         return $this->id;
     }
 
-    public function setId(int $id): self
+    public function setId($id): self
     {
         $this->id = $id;
         return $this;
