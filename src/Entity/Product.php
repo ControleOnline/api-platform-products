@@ -6,7 +6,6 @@ use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\ProductUnity;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Delete;
@@ -35,7 +34,7 @@ use ControleOnline\Filter\RandomOrderFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['max_depth' => 1, 'groups' => ['product:read']],
+    normalizationContext: ['groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['id' => 'ASC', 'product' => 'ASC', 'price' => 'DESC'])]
@@ -159,18 +158,11 @@ class Product
      */
     private $queue;
 
-/**
-     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="product")
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
-     */
-    #[MaxDepth(1)]
-    private $productGroupProducts;
 
     public function __construct()
     {
         $this->productFiles = new \Doctrine\Common\Collections\ArrayCollection();
         $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
-        $this->productGroupProducts = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     public function getId()
@@ -312,29 +304,6 @@ class Product
     public function setFeatured(bool $featured): self
     {
         $this->featured = $featured;
-        return $this;
-    }
-
-    public function getProductGroupProducts(): Collection
-    {
-        return $this->productGroupProducts;
-    }
-
-
-    public function addProductGroupProduct(ProductGroupProduct $productGroupProduct): self
-    {
-        if (!$this->productGroupProducts->contains($productGroupProduct)) {
-            $this->productGroupProducts[] = $productGroupProduct;
-            $productGroupProduct->setProduct($this);
-        }
-
-        return $this;
-    }
-
-
-    public function removeProductGroupProduct(ProductGroupProduct $productGroupProduct): self
-    {
-        $this->productGroupProducts->removeElement($productGroupProduct);
         return $this;
     }
 }

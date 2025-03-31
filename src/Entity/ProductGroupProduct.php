@@ -3,7 +3,6 @@
 namespace ControleOnline\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -33,7 +32,7 @@ use ApiPlatform\Metadata\ApiFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')',)
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['max_depth' => 1, 'groups' => ['product_group_product:read']],
+    normalizationContext: ['groups' => ['product_group_product:read']],
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 class ProductGroupProduct
@@ -89,7 +88,6 @@ class ProductGroupProduct
      * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
-    #[MaxDepth(1)]
     private $productChild;
 
     /**

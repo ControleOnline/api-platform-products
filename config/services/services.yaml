@@ -17,6 +17,3 @@ services:
         tags: ['console.command']
     ControleOnline\Filter\:
         resource: '../../src/Filter'            
-    ControleOnline\Serializer\ProductNormalizer:
-        decorates: 'serializer.normalizer.object'
-        arguments: ['@ControleOnline\Serializer\ProductNormalizer.inner']
