@@ -89,7 +89,6 @@ class ProductGroupProduct
      * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
-    #[MaxDepth(1)]
     private $productChild;
 
     /**
