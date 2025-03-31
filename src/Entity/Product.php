@@ -159,18 +159,12 @@ class Product
      */
     private $queue;
 
-    /**
-     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="product")
-     * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
-     */
-    #[MaxDepth(1)]
-    private $productGroupProducts;
+    
 
     public function __construct()
     {
         $this->productFiles = new \Doctrine\Common\Collections\ArrayCollection();
         $this->productCategory = new \Doctrine\Common\Collections\ArrayCollection();
-        $this->productGroupProducts = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     public function getId()
@@ -315,26 +309,5 @@ class Product
         return $this;
     }
 
-    public function getProductGroupProducts(): Collection
-    {
-        return $this->productGroupProducts;
-    }
-
-
-    public function addProductGroupProduct(ProductGroupProduct $productGroupProduct): self
-    {
-        if (!$this->productGroupProducts->contains($productGroupProduct)) {
-            $this->productGroupProducts[] = $productGroupProduct;
-            $productGroupProduct->setProduct($this);
-        }
-
-        return $this;
-    }
-
-
-    public function removeProductGroupProduct(ProductGroupProduct $productGroupProduct): self
-    {
-        $this->productGroupProducts->removeElement($productGroupProduct);
-        return $this;
-    }
+    
 }
