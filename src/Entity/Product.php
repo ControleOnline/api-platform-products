@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\ProductUnity;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Delete;
@@ -34,7 +35,7 @@ use ControleOnline\Filter\RandomOrderFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['max_depth' => 2, 'groups' => ['product:read']],
+    normalizationContext: ['groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['id' => 'ASC', 'product' => 'ASC', 'price' => 'DESC'])]
@@ -162,6 +163,7 @@ class Product
      * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="product")
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[MaxDepth(1)]
     private $productGroupProducts;
 
     public function __construct()
