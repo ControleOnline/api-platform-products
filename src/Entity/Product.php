@@ -34,7 +34,7 @@ use ControleOnline\Filter\RandomOrderFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['groups' => ['product:read']],
+    normalizationContext: ['max_depth' => 2, 'groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['id' => 'ASC', 'product' => 'ASC', 'price' => 'DESC'])]
