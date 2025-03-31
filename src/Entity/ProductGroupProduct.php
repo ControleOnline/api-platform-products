@@ -33,7 +33,7 @@ use ApiPlatform\Metadata\ApiFilter;
         new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')',)
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
-    normalizationContext: ['max_depth' => 1, 'groups' => ['product_group_product:read']],
+    normalizationContext: ['max_depth' => 2, 'groups' => ['product_group_product:read']],
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 class ProductGroupProduct
