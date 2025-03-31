@@ -163,6 +163,7 @@ class Product
      * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="product")
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[MaxDepth(3)]
     private $productGroupProducts;
 
     public function __construct()
