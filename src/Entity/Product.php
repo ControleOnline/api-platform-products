@@ -37,7 +37,7 @@ use ControleOnline\Filter\RandomOrderFilter;
     normalizationContext: ['groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['product', 'price'])]
+#[ApiFilter(OrderFilter::class, properties: ['product', 'price', 'description'])]
 #[ApiFilter(RandomOrderFilter::class)]
 class Product
 {
