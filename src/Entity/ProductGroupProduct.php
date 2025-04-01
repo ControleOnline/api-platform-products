@@ -12,7 +12,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
-
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductGroupProduct
@@ -35,6 +35,9 @@ use ApiPlatform\Metadata\ApiFilter;
     normalizationContext: ['groups' => ['product_group_product:read']],
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
+
+#[ApiFilter(OrderFilter::class, properties: ['productGroup.productGroup' => 'ASC', 'product.product' => 'ASC'])]
+
 class ProductGroupProduct
 {
     /**

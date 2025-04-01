@@ -15,6 +15,7 @@ use ApiPlatform\Metadata\ApiFilter;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping\OneToMany;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductGroup
@@ -38,6 +39,8 @@ use Doctrine\ORM\Mapping\OneToMany;
     normalizationContext: ['groups' => ['product_group:read']],
     denormalizationContext: ['groups' => ['product_group:write']]
 )]
+#[ApiFilter(OrderFilter::class, properties: ['productGroup' => 'ASC'])]
+
 class ProductGroup
 {
     /**
