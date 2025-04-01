@@ -36,7 +36,7 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
     normalizationContext: ['groups' => ['product_category:read']],
     denormalizationContext: ['groups' => ['product_category:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['product.product' => 'ASC'])]
+#[ApiFilter(OrderFilter::class, properties: ['product.product'])]
 
 class ProductCategory
 {
