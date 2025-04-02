@@ -22,7 +22,7 @@ use ControleOnline\Filter\RandomOrderFilter;
 /**
  * Product
  *
- * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unit_id", columns={"product_unit_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"})})
+ * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unity_id", columns={"product_unity_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"})})
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
  */
 #[ApiResource(
@@ -142,7 +142,7 @@ class Product
      * @var ProductUnity
      * @ORM\ManyToOne(targetEntity="ProductUnity")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_unit_id", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="product_unity_id", referencedColumnName="id")
      * })
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
