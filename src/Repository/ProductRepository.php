@@ -45,7 +45,7 @@ class ProductRepository extends ServiceEntityRepository
             ])
             ->join('p.company', 'pe')
             ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
-            ->leftJoin('p.unity', 'pu')
+            ->join('p.productUnit', 'pu')
             ->andWhere('p.type NOT IN (:excludedTypes)')
             ->andWhere('pe IN (:companies)')
             ->groupBy('p.id, p.product, p.description, p.sku, pe.id, pe.name, pe.alias, pu.productUnit')
