@@ -6,6 +6,7 @@ use ControleOnline\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use ControleOnline\Entity\People;
+use ControleOnline\Service\PeopleService;
 use Doctrine\DBAL\DBALException;
 use Doctrine\ORM\Query\ResultSetMapping;
 
@@ -17,8 +18,10 @@ use Doctrine\ORM\Query\ResultSetMapping;
  */
 class ProductRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        private PeopleService $peopleService,
+        ManagerRegistry $registry
+    ) {
         parent::__construct($registry, Product::class);
     }
 
@@ -39,7 +42,7 @@ class ProductRepository extends ServiceEntityRepository
                 'SUM(pi.minimum) AS minimum',
                 '(CASE WHEN SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 < 0 THEN 0 ELSE SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 END) AS needed'
             ])
-            ->join('p.people', 'pe')
+            ->join('p.company', 'pe')
             ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
             ->andWhere('p.type NOT IN (:excludedTypes)')
             ->andWhere('pe IN (:companies)')
