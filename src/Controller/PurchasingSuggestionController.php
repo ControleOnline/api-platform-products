@@ -31,7 +31,7 @@ class PurchasingSuggestionController extends AbstractController
     }
 
     /**
-     * @Route("/products/purchasing-suggestion/print", name="purchasing_suggestion", methods={"POST"})
+     * @Route("/products/purchasing-suggestion/print", name="purchasing_suggestion_print", methods={"POST"})
      * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
      */
     public function printPurchasingSuggestion(Request $request): JsonResponse
