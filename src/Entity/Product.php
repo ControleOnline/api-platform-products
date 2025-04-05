@@ -5,6 +5,7 @@ namespace ControleOnline\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\ProductUnity;
+use ControleOnline\Entity\Inventory;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -22,7 +23,7 @@ use ControleOnline\Filter\RandomOrderFilter;
 /**
  * Product
  *
- * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unity_id", columns={"product_unity_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"})})
+ * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unity_id", columns={"product_unity_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"}), @ORM\Index(name="default_out_inventory_id", columns={"default_out_inventory_id"}), @ORM\Index(name="default_in_inventory_id", columns={"default_in_inventory_id"})})
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
  */
 #[ApiResource(
@@ -158,6 +159,27 @@ class Product
      */
     private $queue;
 
+    /**
+     * @var \ControleOnline\Entity\Inventory
+     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="default_out_inventory_id", referencedColumnName="id", nullable=false)
+     * })
+     * @Groups({"product:read", "product:write"})
+     */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['defaultOutInventory' => 'exact'])]
+    private $defaultOutInventory;
+
+    /**
+     * @var \ControleOnline\Entity\Inventory
+     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="default_in_inventory_id", referencedColumnName="id", nullable=false)
+     * })
+     * @Groups({"product:read", "product:write"})
+     */
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['defaultInInventory' => 'exact'])]
+    private $defaultInInventory;
 
     public function __construct()
     {
@@ -304,6 +326,28 @@ class Product
     public function setFeatured(bool $featured): self
     {
         $this->featured = $featured;
+        return $this;
+    }
+
+    public function getDefaultOutInventory(): ?Inventory
+    {
+        return $this->defaultOutInventory;
+    }
+
+    public function setDefaultOutInventory(Inventory $defaultOutInventory): self
+    {
+        $this->defaultOutInventory = $defaultOutInventory;
+        return $this;
+    }
+
+    public function getDefaultInInventory(): ?Inventory
+    {
+        return $this->defaultInInventory;
+    }
+
+    public function setDefaultInInventory(Inventory $defaultInInventory): self
+    {
+        $this->defaultInInventory = $defaultInInventory;
         return $this;
     }
 }
