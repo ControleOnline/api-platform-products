@@ -2,6 +2,8 @@
 
 namespace ControleOnline\Service;
 
+use ControleOnline\Entity\People;
+use ControleOnline\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Security;
 use Doctrine\ORM\QueryBuilder;
@@ -19,6 +21,11 @@ class ProductService
         // $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
     }
 
+    public function getPurchasingSuggestion(People $company)
+    {
+        return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
+    }
+    
     public function updateProductInventory(): void
     {
 
