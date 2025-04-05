@@ -2,23 +2,29 @@
 
 namespace ControleOnline\Repository;
 
-use ControleOnline\Entity\Order;
-use ControleOnline\Entity\People;
-use ControleOnline\Service\PeopleService;
+use ControleOnline\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use ControleOnline\Entity\People;
+use ControleOnline\Service\PeopleService;
 use Doctrine\DBAL\DBALException;
 use Doctrine\ORM\Query\ResultSetMapping;
 
-class OrderRepository extends ServiceEntityRepository
+/**
+ * @method Product|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Product|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Product[]    findAll()
+ * @method Product[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ */
+class ProductRepository extends ServiceEntityRepository
 {
     public function __construct(
         private PeopleService $peopleService,
-
         ManagerRegistry $registry
     ) {
-        parent::__construct($registry, Order::class);
+        parent::__construct($registry, Product::class);
     }
+
 
     public function getPurchasingSuggestion(?People $company): array
     {
@@ -34,7 +40,7 @@ class OrderRepository extends ServiceEntityRepository
                 'p.type AS type',
                 'SUM(pi.available + pi.ordered + pi.transit - pi.sales) AS stock',
                 'SUM(pi.minimum) AS minimum',
-                '(CASE WHEN SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 < 0 THEN 0 ELSE SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 END) AS needed',
+                'CASE WHEN SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 < 0 THEN 0 ELSE SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 END AS needed',
                 'pu.productUnit AS unity'
             ])
             ->join('p.company', 'pe')
