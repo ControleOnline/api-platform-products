@@ -25,31 +25,27 @@ class ProductService
 
     public function getProductsInventory(?People $company): array
     {
-
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
-
-        
     }
 
     public function productsInventoryPrintData(?People $provider, string $printType, string $deviceType)
     {
         $products = $this->getProductsInventory($provider);
 
-        $groupedByCompany = [];
+        $groupedByInventory = [];
         foreach ($products as $product) {
-            $companyName = $product['company_name'];
-            if (!isset($groupedByCompany[$companyName])) {
-                $groupedByCompany[$companyName] = [];
+            $inventoryName = $product['inventory_name'];
+            if (!isset($groupedByInventory[$inventoryName])) {
+                $groupedByInventory[$inventoryName] = [];
             }
-            $groupedByCompany[$companyName][] = $product;
+            $groupedByInventory[$inventoryName][] = $product;
         }
 
-        $this->printService->addLine("", "", "-");
-        $this->printService->addLine("INVENTARIO DE PRODUTOS", "", " ");
-        $this->printService->addLine("", "", "-");
-
-        foreach ($groupedByCompany as $companyName => $items) {
+        foreach ($groupedByInventory as $inventoryName => $items) {
+            $companyName = $items[0]['company_name'] ?? 'Empresa Desconhecida';
+            $this->printService->addLine("", "", "-");
             $this->printService->addLine($companyName, "", " ");
+            $this->printService->addLine("INVENTARIO: " . $inventoryName, "", " ");
             $this->printService->addLine("", "", "-");
             $this->printService->addLine("Produto", "Disponivel", " ");
             $this->printService->addLine("", "", "-");
@@ -59,9 +55,7 @@ class ProductService
                 if (!empty($item['description'])) {
                     $productName .= " " . substr($item['description'], 0, 10);
                 }
-                if (!empty($item['unity'])) {
-                    $productName .= " (" . $item['unity'] . ")";
-                }
+                $productName .= " (" . $item['unity'] . ")";
                 $available = str_pad($item['available'], 4, " ", STR_PAD_LEFT);
                 $this->printService->addLine($productName, $available, " ");
             }

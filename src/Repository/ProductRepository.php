@@ -42,13 +42,13 @@ class ProductRepository extends ServiceEntityRepository
 
     public function getProductsInventory(?People $company): array
     {
-
         $qb = $this->createQueryBuilder('p');
         $qb->select([
             'p.id as product_id',
             'p.product as product_name',
             'p.description',
             'pu.unity',
+            'pu.unitType',
             'pi.available',
             'pi.minimum',
             'pi.maximum',
@@ -58,7 +58,8 @@ class ProductRepository extends ServiceEntityRepository
             ->join('p.productUnit', 'pu')
             ->join('p.company', 'c')
             ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
-            ->join('pi.inventory', 'i');
+            ->join('pi.inventory', 'i')
+            ->orderBy('p.product', 'ASC');
 
         if ($company !== null) {
             $qb->andWhere('p.company = :company')
@@ -67,6 +68,8 @@ class ProductRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getArrayResult();
     }
+
+
     public function getPurchasingSuggestion(?People $company): array
     {
         $this->updateProductInventory();
