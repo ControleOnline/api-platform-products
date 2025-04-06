@@ -69,7 +69,7 @@ class ProductRepository extends ServiceEntityRepository
         $purchasingStatus = [7];
         $orderedStatus = [5];
         $transitStatus = [6];
-        $salesStatus = [6];
+        $salesStatus = [6,7];
         $allStatus = array_unique(array_merge($purchasingStatus, $orderedStatus, $transitStatus, $salesStatus));
 
         try {
