@@ -33,10 +33,7 @@ class ProductRepository extends ServiceEntityRepository
         $salesStatus = '6,7';
         $allStatus = '5,6,7';
 
-        $companyIds = implode(',', array_map(
-            fn($c) => $c->getId(),
-            $this->peopleService->getMyCompanies()
-        ));
+        $companies = implode(',', array_map(fn($c) => $c->getId(), $this->peopleService->getMyCompanies()));
 
         try {
             $conn = $this->getEntityManager()->getConnection();
@@ -46,8 +43,8 @@ class ProductRepository extends ServiceEntityRepository
                 $transitStatus,
                 $salesStatus,
                 $allStatus,
-                $companyIds,
-                $companyIds
+                $companies,
+                $companies
             ]);
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
