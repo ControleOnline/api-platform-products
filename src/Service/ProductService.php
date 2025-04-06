@@ -42,7 +42,7 @@ class ProductService
         }
 
         foreach ($groupedByInventory as $inventoryName => $items) {
-            $companyName = $items[0]['company_name'] ?? 'Empresa Desconhecida';
+            $companyName = $items[0]['company_name'] ;
             $this->printService->addLine("", "", "-");
             $this->printService->addLine($companyName, "", " ");
             $this->printService->addLine("INVENTARIO: " . $inventoryName, "", " ");
@@ -77,7 +77,7 @@ class ProductService
 
         $groupedByCompany = [];
         foreach ($products as $product) {
-            $companyName = $product['company_name'] ?? 'Empresa Desconhecida';
+            $companyName = $product['company_name'] ;
             if (!isset($groupedByCompany[$companyName])) {
                 $groupedByCompany[$companyName] = [];
             }
