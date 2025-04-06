@@ -40,7 +40,33 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
+    public function getProductsInventory(?People $company): array
+    {
 
+        $qb = $this->createQueryBuilder('p');
+        $qb->select([
+            'p.id as product_id',
+            'p.product as product_name',
+            'p.description',
+            'pu.unity',
+            'pi.available',
+            'pi.minimum',
+            'pi.maximum',
+            'c.name as company_name',
+            'i.inventory as inventory_name'
+        ])
+            ->join('p.productUnit', 'pu')
+            ->join('p.company', 'c')
+            ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
+            ->join('pi.inventory', 'i');
+
+        if ($company !== null) {
+            $qb->andWhere('p.company = :company')
+                ->setParameter('company', $company);
+        }
+
+        return $qb->getQuery()->getArrayResult();
+    }
     public function getPurchasingSuggestion(?People $company): array
     {
         $this->updateProductInventory();

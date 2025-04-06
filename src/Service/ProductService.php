@@ -25,31 +25,10 @@ class ProductService
 
     public function getProductsInventory(?People $company): array
     {
-        $qb = $this->manager->createQueryBuilder();
 
-        $qb->select([
-            'p.id as product_id',
-            'p.product as product_name',
-            'p.description',
-            'pu.unity',
-            'pi.available',
-            'pi.minimum',
-            'pi.maximum',
-            'c.name as company_name',
-            'i.inventory as inventory_name'
-        ])
-            ->from('ControleOnline\Entity\Product', 'p')
-            ->join('p.productUnit', 'pu')
-            ->join('p.company', 'c')
-            ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
-            ->join('pi.inventory', 'i');
+        return $this->manager->getRepository(Product::class)->getProductsInventory($company);
 
-        if ($company !== null) {
-            $qb->andWhere('p.company = :company')
-                ->setParameter('company', $company);
-        }
-
-        return $qb->getQuery()->getArrayResult();
+        
     }
 
     public function productsInventoryPrintData(?People $provider, string $printType, string $deviceType)
