@@ -50,7 +50,7 @@ class ProductRepository extends ServiceEntityRepository
             ->andWhere('pe IN (:companies)')
             ->groupBy('p.id, p.product, p.description, p.sku, pe.id, pe.name, pe.alias, pu.productUnit')
             ->having('needed > 0')
-            ->addOrderBy('p.product ASC')
+            ->addOrderBy('p.product', 'ASC')
             ->setParameter('excludedTypes', ['custom', 'component'])
             ->setParameter(
                 'companies',
