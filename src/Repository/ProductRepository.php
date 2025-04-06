@@ -7,7 +7,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use ControleOnline\Entity\People;
 use ControleOnline\Service\PeopleService;
-use Doctrine\ORM\QueryBuilder;
+use Doctrine\DBAL\DBALException;
+use Doctrine\ORM\Query\ResultSetMapping;
 
 /**
  * @method Product|null find($id, $lockMode = null, $lockVersion = null)
@@ -24,91 +25,76 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    private function getInventoryData(): QueryBuilder
+    public function updateProductInventory(): void
     {
-        return $this->createQueryBuilder('p')
-            ->select([
-                'oi.id AS inventory_id',
-                'p.id AS product_id',
-                "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:purchasing_status) THEN op.quantity ELSE 0 END) - 
-                SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS available",
-                "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:ordered_status) THEN op.quantity ELSE 0 END) AS ordered",
-                "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:transit_status) THEN op.quantity ELSE 0 END) AS transit",
-                '0 AS minimum',
-                '0 AS maximum',
-                "SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS sales"
-            ])
-            ->join('ControleOnline\Entity\OrderProduct', 'op', 'WITH', 'op.product = p')
-            ->join('op.order', 'o')
-            ->join('op.outInventory', 'oi')
-            ->andWhere("o.orderType IN ('purchasing', 'sale')")
-            ->andWhere('o.status IN (:all_status)')
-            ->andWhere("p.type IN ('product', 'feedstock')")
-            ->andWhere(
-                "(o.orderType = 'sale' AND o.provider IN (:provider_id)) OR 
-                 (o.orderType = 'purchasing' AND o.client IN (:client_id))"
-            )
-            ->groupBy('op.outInventory, p.id');
-    }
 
-    public function updateInventory(): void
-    {
-        $em = $this->getEntityManager();
+        $sql = "INSERT INTO `product_inventory` (
+                `inventory_id`, 
+                `product_id`, 
+                `available`, 
+                `ordered`, 
+                `transit`, 
+                `minimum`, 
+                `maximum`, 
+                `sales`
+            )
+            SELECT 
+                op.`inventory_id`,
+                op.`product_id`,
+                (SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:purchasing_status) THEN op.`quantity` ELSE 0 END) - 
+                 SUM(CASE WHEN o.`order_type` = 'sale' AND o.`status_id` IN (:sales_status) THEN op.`quantity` ELSE 0 END)) AS `available`,
+                SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:ordered_status) THEN op.`quantity` ELSE 0 END) AS `ordered`,
+                SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:transit_status) THEN op.`quantity` ELSE 0 END) AS `transit`,
+                0 AS `minimum`,
+                0 AS `maximum`,
+                SUM(CASE WHEN o.`order_type` = 'sale' AND o.`status_id` IN (:sales_status) THEN op.`quantity` ELSE 0 END) AS `sales`
+            FROM `orders` o
+            JOIN `order_product` op ON o.`id` = op.`order_id`
+            JOIN `product` p ON op.`product_id` = p.`id`
+            WHERE o.`order_type` IN ('purchasing', 'sale')
+              AND o.`status_id` IN (:all_status)
+              AND p.`type` IN ('product', 'feedstock')
+              AND (
+                  (o.`order_type` = 'sale' AND o.`provider_id` IN (:provider_id))
+                  OR
+                  (o.`order_type` = 'purchasing' AND o.`client_id` IN (:client_id))
+              )
+            GROUP BY op.`inventory_id`, op.`product_id`
+            ON DUPLICATE KEY UPDATE
+                `available` = VALUES(`available`),
+                `ordered` = VALUES(`ordered`),
+                `transit` = VALUES(`transit`),
+                `sales` = VALUES(`sales`)
+        ";
 
         $purchasingStatus = [7];
-        $orderedStatus    = [5];
-        $transitStatus    = [6];
-        $salesStatus      = [6];
+        $orderedStatus = [5];
+        $transitStatus = [6];
+        $salesStatus = [6];
         $allStatus = array_unique(array_merge($purchasingStatus, $orderedStatus, $transitStatus, $salesStatus));
 
         try {
-            $em->getConnection()->beginTransaction();
+            $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
 
-            $inventoryQb = $this->getInventoryData()
-                ->setParameter('purchasing_status', $purchasingStatus)
-                ->setParameter('sales_status', $salesStatus)
-                ->setParameter('ordered_status', $orderedStatus)
-                ->setParameter('transit_status', $transitStatus)
-                ->setParameter('all_status', $allStatus)
-                ->setParameter('provider_id', $this->peopleService->getMyCompanies())
-                ->setParameter('client_id', $this->peopleService->getMyCompanies());
+            $companies = implode(',', array_map(fn($c) => $c->getId(), $this->peopleService->getMyCompanies()));
 
-            $subquery = $inventoryQb->getQuery()->getSQL();
+            $stmt->bindValue('purchasing_status', implode(',', $purchasingStatus), \PDO::PARAM_STR);
+            $stmt->bindValue('sales_status', implode(',', $salesStatus), \PDO::PARAM_STR);
+            $stmt->bindValue('ordered_status', implode(',', $orderedStatus), \PDO::PARAM_STR);
+            $stmt->bindValue('transit_status', implode(',', $transitStatus), \PDO::PARAM_STR);
+            $stmt->bindValue('all_status', implode(',', $allStatus), \PDO::PARAM_STR);
+            $stmt->bindValue('provider_id', $companies, \PDO::PARAM_STR);
+            $stmt->bindValue('client_id',  $companies, \PDO::PARAM_STR);
 
-            $sql = '
-            UPDATE product_inventory pi
-            JOIN (
-                ' . $subquery . '
-            ) inv ON pi.inventory_id = inv.inventory_id AND pi.product_id = inv.product_id
-            SET pi.available = inv.available,
-                pi.ordered   = inv.ordered,
-                pi.transit   = inv.transit,
-                pi.minimum   = inv.minimum,
-                pi.maximum   = inv.maximum,
-                pi.sales     = inv.sales
-        ';
-
-            $em->getConnection()->executeStatement($sql, [
-                'purchasing_status' => $purchasingStatus,
-                'sales_status'      => $salesStatus,
-                'ordered_status'    => $orderedStatus,
-                'transit_status'    => $transitStatus,
-                'all_status'        => $allStatus,
-                'provider_id'       => $this->peopleService->getMyCompanies(),
-                'client_id'         => $this->peopleService->getMyCompanies()
-            ]);
-
-            $em->getConnection()->commit();
+            $stmt->executeQuery();
         } catch (\Exception $e) {
-            $em->getConnection()->rollBack();
-            throw new \Exception($e->getMessage());
+            throw new \Exception("Erro ao atualizar o estoque: " . $e->getMessage());
         }
     }
 
-
     public function getPurchasingSuggestion(?People $company): array
     {
-        $this->updateInventory();
+        $this->updateProductInventory();
         $qb = $this->createQueryBuilder('p')
             ->select([
                 'pe.id AS company_id',
