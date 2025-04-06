@@ -27,69 +27,33 @@ class ProductRepository extends ServiceEntityRepository
 
     public function updateProductInventory(): void
     {
-        $sql = "INSERT INTO `product_inventory` (
-                `inventory_id`, 
-                `product_id`, 
-                `available`, 
-                `ordered`, 
-                `transit`, 
-                `minimum`, 
-                `maximum`, 
-                `sales`
-            )
-            SELECT 
-                op.`out_inventory_id`,
-                op.`product_id`,
-                (SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:purchasing_status) THEN op.`quantity` ELSE 0 END) - 
-                 SUM(CASE WHEN o.`order_type` = 'sale' AND o.`status_id` IN (:sales_status) THEN op.`quantity` ELSE 0 END)) AS `available`,
-                SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:ordered_status) THEN op.`quantity` ELSE 0 END) AS `ordered`,
-                SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:transit_status) THEN op.`quantity` ELSE 0 END) AS `transit`,
-                0 AS `minimum`,
-                0 AS `maximum`,
-                SUM(CASE WHEN o.`order_type` = 'sale' AND o.`status_id` IN (:sales_status) THEN op.`quantity` ELSE 0 END) AS `sales`
-            FROM `orders` o
-            JOIN `order_product` op ON o.`id` = op.`order_id`
-            JOIN `product` p ON op.`product_id` = p.`id`
-            WHERE o.`order_type` IN ('purchasing', 'sale')
-              AND o.`status_id` IN (:all_status)
-              AND p.`type` IN ('product', 'feedstock')
-              AND (
-                  (o.`order_type` = 'sale' AND o.`provider_id` IN (:provider_id))
-                  OR
-                  (o.`order_type` = 'purchasing' AND o.`client_id` IN (:client_id))
-              )
-            GROUP BY op.`out_inventory_id`, op.`product_id`
-            ON DUPLICATE KEY UPDATE
-                `available` = VALUES(`available`),
-                `ordered` = VALUES(`ordered`),
-                `transit` = VALUES(`transit`),
-                `sales` = VALUES(`sales`)
-        ";
+        $purchasingStatus = '7';
+        $orderedStatus = '5';
+        $transitStatus = '6';
+        $salesStatus = '6,7';
+        $allStatus = '5,6,7';
 
-        $purchasingStatus = [7];
-        $orderedStatus = [5];
-        $transitStatus = [6];
-        $salesStatus = [6,7];
-        $allStatus = array_unique(array_merge($purchasingStatus, $orderedStatus, $transitStatus, $salesStatus));
+        $companyIds = implode(',', array_map(
+            fn($c) => $c->getId(),
+            $this->peopleService->getMyCompanies()
+        ));
 
         try {
-            $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-
-            $companies = implode(',', array_map(fn($c) => $c->getId(), $this->peopleService->getMyCompanies()));
-
-            $stmt->bindValue('purchasing_status', implode(',', $purchasingStatus), \PDO::PARAM_STR);
-            $stmt->bindValue('sales_status', implode(',', $salesStatus), \PDO::PARAM_STR);
-            $stmt->bindValue('ordered_status', implode(',', $orderedStatus), \PDO::PARAM_STR);
-            $stmt->bindValue('transit_status', implode(',', $transitStatus), \PDO::PARAM_STR);
-            $stmt->bindValue('all_status', implode(',', $allStatus), \PDO::PARAM_STR);
-            $stmt->bindValue('provider_id', $companies, \PDO::PARAM_STR);
-            $stmt->bindValue('client_id',  $companies, \PDO::PARAM_STR);
-
-            $stmt->executeQuery();
+            $conn = $this->getEntityManager()->getConnection();
+            $conn->executeStatement('CALL update_product_inventory(?, ?, ?, ?, ?, ?, ?)', [
+                $purchasingStatus,
+                $orderedStatus,
+                $transitStatus,
+                $salesStatus,
+                $allStatus,
+                $companyIds,
+                $companyIds
+            ]);
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }
     }
+
 
     public function getPurchasingSuggestion(?People $company): array
     {
@@ -126,7 +90,7 @@ class ProductRepository extends ServiceEntityRepository
         if ($company)
             $qb->andWhere('pe = :company')->setParameter('company', $company);
 
-            error_log($qb->getQuery()->getSQL());
+        error_log($qb->getQuery()->getSQL());
         return $qb->getQuery()->getResult();
     }
 }
