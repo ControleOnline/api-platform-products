@@ -38,14 +38,14 @@ class ProductRepository extends ServiceEntityRepository
                 '0 AS maximum',
                 "SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS sales"
             ])
-            ->join('ControleOnline\Entity\OrderProduct', 'op', 'WITH', 'op.product = p.id')
+            ->join('ControleOnline\Entity\OrderProduct', 'op', 'WITH', 'op.product = p')
             ->join('op.order', 'o')
             ->andWhere("o.orderType IN ('purchasing', 'sale')")
             ->andWhere('o.status IN (:all_status)')
             ->andWhere("p.type IN ('product', 'feedstock')")
             ->andWhere(
                 "(o.orderType = 'sale' AND o.provider IN (:provider_id)) OR 
-                (o.orderType = 'purchasing' AND o.client IN (:client_id))"
+                 (o.orderType = 'purchasing' AND o.client IN (:client_id))"
             )
             ->groupBy('op.outInventory, p.id');
     }
