@@ -56,27 +56,15 @@ class ProductRepository extends ServiceEntityRepository
         $em = $this->getEntityManager();
 
         $purchasingStatus = [7];
-        $orderedStatus = [5];
-        $transitStatus = [6];
-        $salesStatus = [6];
+        $orderedStatus    = [5];
+        $transitStatus    = [6];
+        $salesStatus      = [6];
         $allStatus = array_unique(array_merge($purchasingStatus, $orderedStatus, $transitStatus, $salesStatus));
 
         try {
             $em->getConnection()->beginTransaction();
 
-            $inventoryQb = $this->getInventoryData();
-
-            $qb = $this->createQueryBuilder('p')
-                ->update('ControleOnline\Entity\ProductInventory', 'pi')
-                ->set('pi.available', 'inv.available')
-                ->set('pi.ordered', 'inv.ordered')
-                ->set('pi.transit', 'inv.transit')
-                ->set('pi.minimum', 'inv.minimum')
-                ->set('pi.maximum', 'inv.maximum')
-                ->set('pi.sales', 'inv.sales')
-                ->from('(' . $inventoryQb->getQuery()->getDQL() . ')', 'inv')
-                ->where('pi.inventory = inv.inventory')
-                ->andWhere('pi.product = inv.product')
+            $inventoryQb = $this->getInventoryData()
                 ->setParameter('purchasing_status', $purchasingStatus)
                 ->setParameter('sales_status', $salesStatus)
                 ->setParameter('ordered_status', $orderedStatus)
@@ -85,13 +73,38 @@ class ProductRepository extends ServiceEntityRepository
                 ->setParameter('provider_id', $this->peopleService->getMyCompanies())
                 ->setParameter('client_id', $this->peopleService->getMyCompanies());
 
-            $qb->getQuery()->execute();
+            $subquery = $inventoryQb->getQuery()->getSQL();
+
+            $sql = '
+            UPDATE product_inventory pi
+            JOIN (
+                ' . $subquery . '
+            ) inv ON pi.inventory_id = inv.inventory_id AND pi.product_id = inv.product_id
+            SET pi.available = inv.available,
+                pi.ordered   = inv.ordered,
+                pi.transit   = inv.transit,
+                pi.minimum   = inv.minimum,
+                pi.maximum   = inv.maximum,
+                pi.sales     = inv.sales
+        ';
+
+            $em->getConnection()->executeStatement($sql, [
+                'purchasing_status' => $purchasingStatus,
+                'sales_status'      => $salesStatus,
+                'ordered_status'    => $orderedStatus,
+                'transit_status'    => $transitStatus,
+                'all_status'        => $allStatus,
+                'provider_id'       => $this->peopleService->getMyCompanies(),
+                'client_id'         => $this->peopleService->getMyCompanies()
+            ]);
+
             $em->getConnection()->commit();
         } catch (\Exception $e) {
             $em->getConnection()->rollBack();
             throw new \Exception($e->getMessage());
         }
     }
+
 
     public function getPurchasingSuggestion(?People $company): array
     {
