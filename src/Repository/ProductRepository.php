@@ -28,7 +28,7 @@ class ProductRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->select([
-                'op.inventory AS inventory_id',
+                'op.outInventory AS inventory_id',
                 'p.id AS product_id',
                 "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:purchasing_status) THEN op.quantity ELSE 0 END) - 
                  SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS available",
@@ -47,7 +47,7 @@ class ProductRepository extends ServiceEntityRepository
                 "(o.orderType = 'sale' AND o.provider IN (:provider_id)) OR 
                  (o.orderType = 'purchasing' AND o.client IN (:client_id))"
             )
-            ->groupBy('op.inventory, p.id');
+            ->groupBy('op.outInventory, p.id');
     }
 
     public function updateInventory(): void
