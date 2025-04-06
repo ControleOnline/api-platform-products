@@ -77,15 +77,13 @@ class ProductRepository extends ServiceEntityRepository
                 ->from('(' . $inventoryQb->getQuery()->getDQL() . ')', 'inv')
                 ->where('pi.inventory = inv.inventory')
                 ->andWhere('pi.product = inv.product')
-                ->setParameters([
-                    'purchasing_status' => $purchasingStatus,
-                    'sales_status' => $salesStatus,
-                    'ordered_status' => $orderedStatus,
-                    'transit_status' => $transitStatus,
-                    'all_status' => $allStatus,
-                    'provider_id' =>  $this->peopleService->getMyCompanies(),
-                    'client_id' => $this->peopleService->getMyCompanies(),
-                ]);
+                ->setParameter('purchasing_status', $purchasingStatus)
+                ->setParameter('sales_status', $salesStatus)
+                ->setParameter('ordered_status', $orderedStatus)
+                ->setParameter('transit_status', $transitStatus)
+                ->setParameter('all_status', $allStatus)
+                ->setParameter('provider_id', $this->peopleService->getMyCompanies())
+                ->setParameter('client_id', $this->peopleService->getMyCompanies());
 
             $qb->getQuery()->execute();
             $em->getConnection()->commit();
