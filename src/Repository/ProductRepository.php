@@ -26,10 +26,10 @@ class ProductRepository extends ServiceEntityRepository
 
     private function getInventoryData(): QueryBuilder
     {
-        return $this->createQueryBuilder('p')
+        return $this->createQueryBuilder('prod')
             ->select([
-                'op.inventory AS inventory',
-                'op.product AS product',
+                'op.inventory AS inventory_id',
+                'op.product AS product_id',
                 "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:purchasing_status) THEN op.quantity ELSE 0 END) - 
                  SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS available",
                 "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:ordered_status) THEN op.quantity ELSE 0 END) AS ordered",
@@ -40,16 +40,17 @@ class ProductRepository extends ServiceEntityRepository
             ])
             ->from('ControleOnline\Entity\Order', 'o')
             ->join('o.orderProducts', 'op')
-            ->join('op.product', 'p')
+            ->join('op.product', 'prod')
             ->andWhere("o.orderType IN ('purchasing', 'sale')")
             ->andWhere('o.status IN (:all_status)')
-            ->andWhere("p.type IN ('product', 'feedstock')")
+            ->andWhere("prod.type IN ('product', 'feedstock')")
             ->andWhere(
                 "(o.orderType = 'sale' AND o.provider IN (:provider_id)) OR 
                  (o.orderType = 'purchasing' AND o.client IN (:client_id))"
             )
             ->groupBy('op.inventory, op.product');
     }
+
 
     public function updateInventory(): void
     {
