@@ -27,29 +27,19 @@ class ProductRepository extends ServiceEntityRepository
 
     public function updateProductInventory(): void
     {
-        $purchasingStatus = '7';
-        $orderedStatus = '5';
-        $transitStatus = '6';
-        $salesStatus = '6,7';
-        $allStatus = '5,6,7';
-
-        $companies = implode(',', array_map(fn($c) => $c->getId(), $this->peopleService->getMyCompanies()));
+        $companies = implode(',', array_map(
+            fn($c) => $c->getId(),
+            $this->peopleService->getMyCompanies()
+        ));
 
         try {
             $conn = $this->getEntityManager()->getConnection();
-            $conn->executeStatement('CALL update_product_inventory(?, ?, ?, ?, ?, ?, ?)', [
-                $purchasingStatus,
-                $orderedStatus,
-                $transitStatus,
-                $salesStatus,
-                $allStatus,
-                $companies,
-                $companies
-            ]);
+            $conn->executeStatement('CALL update_product_inventory(?)', [$companies]);
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }
     }
+
 
 
     public function getPurchasingSuggestion(?People $company): array
