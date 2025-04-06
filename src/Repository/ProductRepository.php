@@ -28,7 +28,7 @@ class ProductRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->select([
-                'op.outInventory.id AS inventory_id',
+                'oi.id AS inventory_id',
                 'p.id AS product_id',
                 "SUM(CASE WHEN o.orderType = 'purchasing' AND o.status IN (:purchasing_status) THEN op.quantity ELSE 0 END) - 
                 SUM(CASE WHEN o.orderType = 'sale' AND o.status IN (:sales_status) THEN op.quantity ELSE 0 END) AS available",
@@ -40,6 +40,7 @@ class ProductRepository extends ServiceEntityRepository
             ])
             ->join('ControleOnline\Entity\OrderProduct', 'op', 'WITH', 'op.product = p')
             ->join('op.order', 'o')
+            ->join('op.outInventory', 'oi')
             ->andWhere("o.orderType IN ('purchasing', 'sale')")
             ->andWhere('o.status IN (:all_status)')
             ->andWhere("p.type IN ('product', 'feedstock')")
