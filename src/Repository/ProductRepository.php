@@ -27,7 +27,6 @@ class ProductRepository extends ServiceEntityRepository
 
     public function updateProductInventory(): void
     {
-
         $sql = "INSERT INTO `product_inventory` (
                 `inventory_id`, 
                 `product_id`, 
@@ -127,6 +126,7 @@ class ProductRepository extends ServiceEntityRepository
         if ($company)
             $qb->andWhere('pe = :company')->setParameter('company', $company);
 
+            error_log($qb->getQuery()->getSQL());
         return $qb->getQuery()->getResult();
     }
 }
