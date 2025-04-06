@@ -29,7 +29,7 @@ class ProductRepository extends ServiceEntityRepository
     {
 
         $sql = "INSERT INTO `product_inventory` (
-                `out_inventory_id`, 
+                `inventory_id`, 
                 `product_id`, 
                 `available`, 
                 `ordered`, 
