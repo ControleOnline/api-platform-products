@@ -55,7 +55,7 @@ class ProductService
                 if (!empty($item['description'])) {
                     $productName .= " " . substr($item['description'], 0, 10);
                 }
-                $productName .= " (" . $item['unity'] . ")";
+                $productName .= " (" . $item['productUnit'] . ")";
                 $available = str_pad($item['available'], 4, " ", STR_PAD_LEFT);
                 $this->printService->addLine($productName, $available, " ");
             }
