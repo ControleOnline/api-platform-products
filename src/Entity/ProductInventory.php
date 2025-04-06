@@ -20,7 +20,7 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 /**
  * ProductInventory
  *
- * @ORM\Table(name="product_inventory", indexes={@ORM\Index(name="inventory_id", columns={"inventory_id"}), @ORM\Index(name="product_id", columns={"product_id"}), @ORM\Index(name="product_unity_id", columns={"product_unity_id"})})
+ * @ORM\Table(name="product_inventory", indexes={@ORM\Index(name="inventory_id", columns={"inventory_id"}), @ORM\Index(name="product_id", columns={"product_id"})})
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductInventoryRepository")
  */
 #[ApiResource(
@@ -68,15 +68,7 @@ class ProductInventory
      */
     private $product;
 
-    /**
-     * @var \ControleOnline\Entity\ProductUnity
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\ProductUnity")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_unity_id", referencedColumnName="id", nullable=false)
-     * })
-     * @Groups({"product_inventory:read", "product_inventory:write"})
-     */
-    private $productUnity;
+
 
     /**
      * @var int
@@ -150,17 +142,6 @@ class ProductInventory
     public function setProduct(Product $product): self
     {
         $this->product = $product;
-        return $this;
-    }
-
-    public function getProductUnity(): ?ProductUnity
-    {
-        return $this->productUnity;
-    }
-
-    public function setProductUnity(ProductUnity $productUnity): self
-    {
-        $this->productUnity = $productUnity;
         return $this;
     }
 
