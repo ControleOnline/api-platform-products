@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use ControleOnline\Entity\People;
 use ControleOnline\Service\ProductService;
 
-class PurchasingSuggestionController extends AbstractController
+class ProductController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $manager,
@@ -41,6 +41,32 @@ class PurchasingSuggestionController extends AbstractController
         $deviceType = $data['device-type'];
         $company = $this->manager->getRepository(People::class)->find($data['people']);
         $printData = $this->productService->purchasingSuggestionPrintData($company, $printType, $deviceType);
+        return new JsonResponse($printData);
+    }
+
+
+
+    /**
+     * @Route("/products/inventory", name="products_inventory", methods={"GET"})
+     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
+     */
+    public function getProductsInventory(Request $request): JsonResponse
+    {
+        $company =  $this->manager->getRepository(People::class)->find($request->get('company'));
+        $data = $this->productService->getProductsInventory($company);
+        return new JsonResponse($data);
+    }
+    /**
+     * @Route("/products/inventory/print", name="products_inventory_print", methods={"POST"})
+     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
+     */
+    public function print(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $printType = $data['print-type'];
+        $deviceType = $data['device-type'];
+        $company = $this->manager->getRepository(People::class)->find($data['people']);
+        $printData = $this->productService->productsInventoryPrintData($company, $printType, $deviceType);
         return new JsonResponse($printData);
     }
 }

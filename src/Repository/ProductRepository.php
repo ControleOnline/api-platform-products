@@ -41,7 +41,6 @@ class ProductRepository extends ServiceEntityRepository
     }
 
 
-
     public function getPurchasingSuggestion(?People $company): array
     {
         $this->updateProductInventory();
