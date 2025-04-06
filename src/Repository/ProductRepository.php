@@ -29,7 +29,7 @@ class ProductRepository extends ServiceEntityRepository
     {
 
         $sql = "INSERT INTO `product_inventory` (
-                `inventory_id`, 
+                `out_inventory_id`, 
                 `product_id`, 
                 `available`, 
                 `ordered`, 
@@ -39,7 +39,7 @@ class ProductRepository extends ServiceEntityRepository
                 `sales`
             )
             SELECT 
-                op.`inventory_id`,
+                op.`out_inventory_id`,
                 op.`product_id`,
                 (SUM(CASE WHEN o.`order_type` = 'purchasing' AND o.`status_id` IN (:purchasing_status) THEN op.`quantity` ELSE 0 END) - 
                  SUM(CASE WHEN o.`order_type` = 'sale' AND o.`status_id` IN (:sales_status) THEN op.`quantity` ELSE 0 END)) AS `available`,
@@ -59,7 +59,7 @@ class ProductRepository extends ServiceEntityRepository
                   OR
                   (o.`order_type` = 'purchasing' AND o.`client_id` IN (:client_id))
               )
-            GROUP BY op.`inventory_id`, op.`product_id`
+            GROUP BY op.`out_inventory_id`, op.`product_id`
             ON DUPLICATE KEY UPDATE
                 `available` = VALUES(`available`),
                 `ordered` = VALUES(`ordered`),
@@ -88,7 +88,7 @@ class ProductRepository extends ServiceEntityRepository
 
             $stmt->executeQuery();
         } catch (\Exception $e) {
-            throw new \Exception("Erro ao atualizar o estoque: " . $e->getMessage());
+            throw new \Exception($e->getMessage());
         }
     }
 
