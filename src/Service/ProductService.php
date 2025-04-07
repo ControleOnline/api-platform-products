@@ -56,7 +56,7 @@ class ProductService
                     $productName .= " " . substr($item['description'], 0, 10);
                 }
                 $productName .= " (" . $item['productUnit'] . ")";
-                $available = $item['available'] || 0;
+                $available = $item['available'] || '0';
                 $this->printService->addLine($productName, $available, " ");
             }
 
