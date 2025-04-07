@@ -64,7 +64,7 @@ class ProductRepository extends ServiceEntityRepository
             $qb->andWhere('p.company = :company')
                 ->setParameter('company', $company);
         }
-
+        error_log($qb->getQuery()->getSQL());
         return $qb->getQuery()->getArrayResult();
     }
 
