@@ -42,10 +42,10 @@ class ProductService
         }
 
         foreach ($groupedByInventory as $inventoryName => $items) {
-            $companyName = $items[0]['company_name'] ;
+            $companyName = $items[0]['company_name'];
             $this->printService->addLine("", "", "-");
             $this->printService->addLine($companyName, "", " ");
-            $this->printService->addLine("INVENTARIO: " . $inventoryName, "", " ");
+            $this->printService->addLine("LOCAL: " . $inventoryName || '', "", " ");
             $this->printService->addLine("", "", "-");
             $this->printService->addLine("Produto", "Disponivel", " ");
             $this->printService->addLine("", "", "-");
@@ -56,7 +56,7 @@ class ProductService
                     $productName .= " " . substr($item['description'], 0, 10);
                 }
                 $productName .= " (" . $item['productUnit'] . ")";
-                $available = str_pad($item['available'], 4, " ", STR_PAD_LEFT);
+                $available = $item['available'] || 0;
                 $this->printService->addLine($productName, $available, " ");
             }
 
@@ -77,7 +77,7 @@ class ProductService
 
         $groupedByCompany = [];
         foreach ($products as $product) {
-            $companyName = $product['company_name'] ;
+            $companyName = $product['company_name'];
             if (!isset($groupedByCompany[$companyName])) {
                 $groupedByCompany[$companyName] = [];
             }
