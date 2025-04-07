@@ -56,7 +56,7 @@ class ProductRepository extends ServiceEntityRepository
         ])
             ->join('p.productUnit', 'pu')
             ->join('p.company', 'c')
-            ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
+            ->leftJoin('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
             ->join('pi.inventory', 'i')
             ->orderBy('p.product', 'ASC');
 
@@ -88,7 +88,7 @@ class ProductRepository extends ServiceEntityRepository
                 'pu.productUnit AS unity'
             ])
             ->join('p.company', 'pe')
-            ->join('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
+            ->leftJoin('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
             ->join('p.productUnit', 'pu')
             ->andWhere('p.type NOT IN (:excludedTypes)')
             ->andWhere('pe IN (:companies)')
