@@ -57,7 +57,7 @@ class ProductRepository extends ServiceEntityRepository
             ->join('p.productUnit', 'pu')
             ->join('p.company', 'c')
             ->leftJoin('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
-            ->join('pi.inventory', 'i')
+            ->leftJoin('pi.inventory', 'i')
             ->orderBy('p.product', 'ASC');
 
         if ($company !== null) {
