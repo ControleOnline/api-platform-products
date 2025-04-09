@@ -18,6 +18,9 @@ use Doctrine\ORM\Query\ResultSetMapping;
  */
 class ProductRepository extends ServiceEntityRepository
 {
+
+    private $inventory_exclude_types = ['custom', 'component', 'manufactured'];
+
     public function __construct(
         private PeopleService $peopleService,
         ManagerRegistry $registry
@@ -58,7 +61,9 @@ class ProductRepository extends ServiceEntityRepository
             ->join('p.company', 'c')
             ->leftJoin('ControleOnline\Entity\ProductInventory', 'pi', 'WITH', 'pi.product = p.id')
             ->leftJoin('pi.inventory', 'i')
-            ->orderBy('p.product', 'ASC');
+            ->orderBy('p.product', 'ASC')
+            ->andWhere('p.type NOT IN (:excludedTypes)')
+            ->setParameter('excludedTypes', $this->inventory_exclude_types);
 
         if ($company !== null) {
             $qb->andWhere('p.company = :company')
@@ -95,7 +100,7 @@ class ProductRepository extends ServiceEntityRepository
             ->groupBy('p.id, p.product, p.description, p.sku, pe.id, pe.name, pe.alias, pu.productUnit')
             ->having('needed > 0')
             ->addOrderBy('p.product', 'ASC')
-            ->setParameter('excludedTypes', ['custom', 'component'])
+            ->setParameter('excludedTypes', $this->inventory_exclude_types)
             ->setParameter(
                 'companies',
                 $this->peopleService->getMyCompanies()
