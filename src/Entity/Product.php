@@ -53,8 +53,7 @@ class Product
     private $id;
 
     /**
-     * @var string
-     * @ORM\Column(name="product", type="string", length=255, nullable=false)
+     * @ORM\Column(name="product", type="string", length=255, nullable=true)
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'partial'])]
