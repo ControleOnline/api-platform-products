@@ -163,7 +163,7 @@ class Product
      * @var \ControleOnline\Entity\Inventory
      * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="default_out_inventory_id", referencedColumnName="id", nullable=false)
+     *   @ORM\JoinColumn(name="default_out_inventory_id", referencedColumnName="id", nullable=true)
      * })
      * @Groups({"product:read", "product:write"})
      */
@@ -174,7 +174,7 @@ class Product
      * @var \ControleOnline\Entity\Inventory
      * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="default_in_inventory_id", referencedColumnName="id", nullable=false)
+     *   @ORM\JoinColumn(name="default_in_inventory_id", referencedColumnName="id", nullable=true)
      * })
      * @Groups({"product:read", "product:write"})
      */
