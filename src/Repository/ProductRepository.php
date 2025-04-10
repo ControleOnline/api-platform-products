@@ -35,9 +35,25 @@ class ProductRepository extends ServiceEntityRepository
             $this->peopleService->getMyCompanies()
         ));
 
+        $purchasing_status = '7';
+        $ordered_status = '5';
+        $transit_status = '6';
+        $sales_status = '6,7';
+        $all_status = '5,6,7';
+
         try {
             $conn = $this->getEntityManager()->getConnection();
-            $conn->executeStatement('CALL update_product_inventory(?)', [$companies]);
+            $conn->executeStatement(
+                'CALL update_product_inventory(?, ?, ?, ?, ?, ?)',
+                [
+                    $companies,
+                    $purchasing_status,
+                    $ordered_status,
+                    $transit_status,
+                    $sales_status,
+                    $all_status
+                ]
+            );
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }
