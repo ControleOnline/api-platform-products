@@ -6,7 +6,8 @@ use ControleOnline\Entity\Device;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
+ AS Security;
 use Doctrine\ORM\QueryBuilder;
 
 class ProductService
