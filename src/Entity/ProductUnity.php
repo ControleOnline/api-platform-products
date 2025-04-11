@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -20,12 +21,8 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
 
 /**
- * ProductUnity
- *
- * @ORM\Table(name="product_unity")
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductUnityRepository")
- */
-
+  * ProductUnity
+  */
  #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
@@ -38,34 +35,34 @@ use ApiPlatform\Metadata\ApiResource;
     normalizationContext: ['groups' => ['product_unity:read']],
     denormalizationContext: ['groups' => ['product_unity:write']]
 )]
+ #[ORM\Table(name: 'product_unity')]
+ #[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductUnityRepository::class)]
 class ProductUnity
 {
     /**
      * @var int
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
-
      */
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="product_unit", type="string", length=3, nullable=false)
      * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
-
      */
+    #[ORM\Column(name: 'product_unit', type: 'string', length: 3, nullable: false)]
     private $productUnit;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="unit_type", type="string", length=0, nullable=false, options={"default"="'I'","comment"="Integer, Fractioned"})
      * @Groups({"product:read","product_group_product:read","product_group:read","product_unity:read"})
      */
+    #[ORM\Column(name: 'unit_type', type: 'string', length: 0, nullable: false, options: ['default' => "'I'", 'comment' => 'Integer, Fractioned'])]
     private $unitType = 'I';
 
     /**

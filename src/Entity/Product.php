@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
@@ -22,9 +23,6 @@ use ControleOnline\Filter\RandomOrderFilter;
 
 /**
  * Product
- *
- * @ORM\Table(name="product", uniqueConstraints={@ORM\UniqueConstraint(name="company_id", columns={"company_id", "sku"})}, indexes={@ORM\Index(name="product_unity_id", columns={"product_unity_id"}), @ORM\Index(name="IDX_D34A04AD979B1AD6", columns={"company_id"}), @ORM\Index(name="default_out_inventory_id", columns={"default_out_inventory_id"}), @ORM\Index(name="default_in_inventory_id", columns={"default_in_inventory_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductRepository")
  */
 #[ApiResource(
     operations: [
@@ -40,144 +38,139 @@ use ControleOnline\Filter\RandomOrderFilter;
 )]
 #[ApiFilter(OrderFilter::class, properties: ['product', 'price', 'description'])]
 #[ApiFilter(RandomOrderFilter::class)]
+#[ORM\Table(name: 'product')]
+#[ORM\Index(name: 'product_unity_id', columns: ['product_unity_id'])]
+#[ORM\Index(name: 'IDX_D34A04AD979B1AD6', columns: ['company_id'])]
+#[ORM\Index(name: 'default_out_inventory_id', columns: ['default_out_inventory_id'])]
+#[ORM\Index(name: 'default_in_inventory_id', columns: ['default_in_inventory_id'])]
+#[ORM\UniqueConstraint(name: 'company_id', columns: ['company_id', 'sku'])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductRepository::class)]
 class Product
 {
     /**
      * @var int
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_category:read","product:read","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
-     * @ORM\Column(name="product", type="string", length=255, nullable=true)
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'partial'])]
+    #[ORM\Column(name: 'product', type: 'string', length: 255, nullable: true)]
     private $product;
 
     /**
-     * @ORM\OneToMany(targetEntity="ProductFile", mappedBy="product")
      * @Groups({"product:read","product_category:read","order_product:read"})
      */
     #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]
+    #[ORM\OneToMany(targetEntity: \ProductFile::class, mappedBy: 'product')]
     private $productFiles;
 
-    /**
-     * @ORM\OneToMany(targetEntity="ProductCategory", mappedBy="product")
-     */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCategory.category' => 'exact'])]
+    #[ORM\OneToMany(targetEntity: \ProductCategory::class, mappedBy: 'product')]
     private $productCategory;
 
     /**
      * @var string|null
-     * @ORM\Column(name="sku", type="string", length=32, nullable=true, options={"default"="NULL"})
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['sku' => 'partial'])]
+    #[ORM\Column(name: 'sku', type: 'string', length: 32, nullable: true, options: ['default' => 'NULL'])]
     private $sku = null;
 
     /**
      * @var string
-     * @ORM\Column(name="type", type="string", length=0, nullable=false, options={"default"="'product'"})
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['type' => 'exact'])]
+    #[ORM\Column(name: 'type', type: 'string', length: 0, nullable: false, options: ['default' => "'product'"])]
     private $type = 'product';
 
     /**
      * @var float
-     * @ORM\Column(name="price", type="float", precision=10, scale=0, nullable=false)
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[ORM\Column(name: 'price', type: 'float', precision: 10, scale: 0, nullable: false)]
     private $price = 0;
 
     /**
      * @var string
-     * @ORM\Column(name="product_condition", type="string", length=0, nullable=false, options={"default"="'new'"})
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCondition' => 'exact'])]
+    #[ORM\Column(name: 'product_condition', type: 'string', length: 0, nullable: false, options: ['default' => "'new'"])]
     private $productCondition = 'new';
 
     /**
      * @var string
-     * @ORM\Column(name="description", type="string", length=0, nullable=false)
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[ORM\Column(name: 'description', type: 'string', length: 0, nullable: false)]
     private $description = '';
 
     /**
      * @var bool
-     * @ORM\Column(name="featured", type="boolean", nullable=false, options={"default"="0"})
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['featured' => 'exact'])]
+    #[ORM\Column(name: 'featured', type: 'boolean', nullable: false, options: ['default' => '0'])]
     private $featured = false;
 
     /**
      * @var bool
-     * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['active' => 'exact'])]
+    #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
     private $active = true;
 
     /**
      * @var \ControleOnline\Entity\People
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="company_id", referencedColumnName="id")
-     * })
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
+    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: People::class)]
     private $company;
 
     /**
      * @var ProductUnity
-     * @ORM\ManyToOne(targetEntity="ProductUnity")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_unity_id", referencedColumnName="id")
-     * })
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[ORM\JoinColumn(name: 'product_unity_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \ProductUnity::class)]
     private $productUnit;
 
     /**
      * @var Queue
-     * @ORM\ManyToOne(targetEntity="Queue")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="queue_id", referencedColumnName="id")
-     * })
      * @Groups({"product_category:read","product:read","product_group_product:read","order_product:read","order_product_queue:read","order:read","order_details:read","order:write","product:write"})
      */
+    #[ORM\JoinColumn(name: 'queue_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Queue::class)]
     private $queue;
 
     /**
      * @var \ControleOnline\Entity\Inventory
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="default_out_inventory_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"product:read", "product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['defaultOutInventory' => 'exact'])]
+    #[ORM\JoinColumn(name: 'default_out_inventory_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: Inventory::class)]
     private $defaultOutInventory;
 
     /**
      * @var \ControleOnline\Entity\Inventory
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="default_in_inventory_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"product:read", "product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['defaultInInventory' => 'exact'])]
+    #[ORM\JoinColumn(name: 'default_in_inventory_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: Inventory::class)]
     private $defaultInInventory;
 
     public function __construct()

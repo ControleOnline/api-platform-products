@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -16,9 +17,6 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductGroupProduct
- *
- * @ORM\Table(name="product_group_product")
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupProductRepository")
  */
 #[ApiResource(
     operations: [
@@ -37,87 +35,86 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 )]
 
 #[ApiFilter(OrderFilter::class, properties: ['productGroup.productGroup' => 'ASC', 'product.product' => 'ASC'])]
+#[ORM\Table(name: 'product_group_product')]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductGroupProductRepository::class)]
 
 class ProductGroupProduct
 {
     /**
      * @var int
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
 
     private $id;
 
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \Product::class)]
 
     private $product;
 
     /**
      * @var ProductGroup
      *
-     * @ORM\ManyToOne(targetEntity="ProductGroup")
-     * @ORM\JoinColumn(name="product_group_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
+    #[ORM\JoinColumn(name: 'product_group_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ProductGroup::class)]
 
     private $productGroup;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="product_type", type="string", columnDefinition="ENUM('feedstock', 'component', 'package')", nullable=false)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productType' => 'exact'])]
+    #[ORM\Column(name: 'product_type', type: 'string', columnDefinition: "ENUM('feedstock', 'component', 'package')", nullable: false)]
 
     private $productType;
 
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumn(name="product_child_id", referencedColumnName="id", nullable=true)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
      */
+    #[ORM\JoinColumn(name: 'product_child_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \Product::class)]
     private $productChild;
 
     /**
      * @var float
      *
-     * @ORM\Column(name="quantity", type="float", precision=10, scale=2, nullable=false, options={"default"="1.00"})
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
-
      */
+    #[ORM\Column(name: 'quantity', type: 'float', precision: 10, scale: 2, nullable: false, options: ['default' => '1.00'])]
     private $quantity = 0;
 
     /**
      * @var float
      *
-     * @ORM\Column(name="price", type="float", precision=10, scale=2, nullable=false)
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
-
      */
+    #[ORM\Column(name: 'price', type: 'float', precision: 10, scale: 2, nullable: false)]
     private $price = 0;
 
     /**
      * @var bool
      *
-     * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
      * @Groups({"product_group_product:read","product_group:write","product_group_product:write"})
-
      */
+    #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
     private $active = true;
 
     /**

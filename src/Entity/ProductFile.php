@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -16,11 +17,7 @@ use ApiPlatform\Metadata\ApiFilter;
 
 /**
  * ProductFile
- *
- * @ORM\Table(name="product_file", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "file_id"})}, indexes={@ORM\Index(name="file_id", columns={"file_id"}), @ORM\Index(name="IDX_CDFC73564584665B", columns={"product_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductFileRepository")
  */
-
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
@@ -36,42 +33,43 @@ use ApiPlatform\Metadata\ApiFilter;
     normalizationContext: ['groups' => ['product_file:read']],
     denormalizationContext: ['groups' => ['product_file:write']]
 )]
+#[ORM\Table(name: 'product_file')]
+#[ORM\Index(name: 'file_id', columns: ['file_id'])]
+#[ORM\Index(name: 'IDX_CDFC73564584665B', columns: ['product_id'])]
+#[ORM\UniqueConstraint(name: 'product_id', columns: ['product_id', 'file_id'])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductFileRepository::class)]
 class ProductFile
 {
     /**
      * @var int
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product:read","order_product:read","product_file:read","product_category:read"})
      */
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var ControleOnline\Entity\File
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\File")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="file_id", referencedColumnName="id")
-     * })
      * @Groups({"product:read","order_product:read","product_file:read","product_file:write","product_category:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['file' => 'exact'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['file.fileType' => 'exact'])]
+    #[ORM\JoinColumn(name: 'file_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\File::class)]
 
     private $file;
 
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     * })
      * @Groups({"product_file:read","product_file:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Product::class)]
 
     private $product;
 

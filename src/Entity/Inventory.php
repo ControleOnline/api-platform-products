@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
@@ -17,9 +18,6 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * Inventory
- *
- * @ORM\Table(name="inventory", indexes={@ORM\Index(name="people_id", columns={"people_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\InventoryRepository")
  */
 #[ApiResource(
     operations: [
@@ -35,39 +33,40 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 )]
 #[ApiFilter(OrderFilter::class, properties: ['inventory', 'type'])]
 #[ApiFilter(SearchFilter::class, properties: ['id' => 'exact', 'inventory' => 'partial', 'type' => 'exact', 'people' => 'exact'])]
+#[ORM\Table(name: 'inventory')]
+#[ORM\Index(name: 'people_id', columns: ['people_id'])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\InventoryRepository::class)]
 class Inventory
 {
     /**
      * @var int
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"inventory:read", "inventory:write"})
      */
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var string
-     * @ORM\Column(name="inventory", type="string", length=255, nullable=false)
      * @Groups({"inventory:read", "inventory:write"})
      */
+    #[ORM\Column(name: 'inventory', type: 'string', length: 255, nullable: false)]
     private $inventory;
 
     /**
      * @var string
-     * @ORM\Column(name="type", type="string", length=50, nullable=false)
      * @Groups({"inventory:read", "inventory:write"})
      */
+    #[ORM\Column(name: 'type', type: 'string', length: 50, nullable: false)]
     private $type;
 
     /**
      * @var \ControleOnline\Entity\People
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="people_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"inventory:read", "inventory:write"})
      */
+    #[ORM\JoinColumn(name: 'people_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: People::class)]
     private $people;
 
     public function getId(): ?int

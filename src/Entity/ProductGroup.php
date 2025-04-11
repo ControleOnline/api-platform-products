@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -19,11 +20,7 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductGroup
- *
- * @ORM\Table(name="product_group")
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductGroupRepository")
  */
-
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')',),
@@ -40,95 +37,96 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
     denormalizationContext: ['groups' => ['product_group:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['productGroup'])]
+#[ORM\Table(name: 'product_group')]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductGroupRepository::class)]
 
 class ProductGroup
 {
     /**
      * @var int
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="product_group", type="string", length=255, nullable=false)
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
+    #[ORM\Column(name: 'product_group', type: 'string', length: 255, nullable: false)]
 
     private $productGroup;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="price_calculation", type="string", length=0, nullable=false, options={"default"="'sum'"})
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
+    #[ORM\Column(name: 'price_calculation', type: 'string', length: 0, nullable: false, options: ['default' => "'sum'"])]
 
     private $priceCalculation = 'sum';
 
     /**
      * @var bool
      *
-     * @ORM\Column(name="required", type="boolean", nullable=false)
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
+    #[ORM\Column(name: 'required', type: 'boolean', nullable: false)]
     private $required = 0;
 
     /**
      * @var int|null
      *
-     * @ORM\Column(name="minimum", type="integer", nullable=true, options={"default"="NULL"})
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
+    #[ORM\Column(name: 'minimum', type: 'integer', nullable: true, options: ['default' => 'NULL'])]
     private $minimum = NULL;
 
     /**
      * @var int|null
      *
-     * @ORM\Column(name="maximum", type="integer", nullable=true, options={"default"="NULL"})
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
+    #[ORM\Column(name: 'maximum', type: 'integer', nullable: true, options: ['default' => 'NULL'])]
     private $maximum = NULL;
 
     /**
      * @var bool
      *
-     * @ORM\Column(name="active", type="boolean", nullable=false, options={"default"="1"})
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
+    #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
     private $active = true;
 
     /**
      * @var int
      *
-     * @ORM\Column(name="group_order", type="integer", nullable=false)
      * @Groups({"product_group:read","product_group:write","order_product:read"})
      */
-
+    #[ORM\Column(name: 'group_order', type: 'integer', nullable: false)]
     private $groupOrder = 0;
 
     /**
      * @var Collection|ProductGroupProduct[]
      *
-     * @ORM\OneToMany(targetEntity="ProductGroupProduct", mappedBy="productGroup", orphanRemoval=true)
      * @Groups({"product_group:write"})
      */
+    #[ORM\OneToMany(targetEntity: \ProductGroupProduct::class, mappedBy: 'productGroup', orphanRemoval: true)]
     private $products;
 
     /**
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Product")
-     * @ORM\JoinColumn(nullable=false)
      * @Groups({"product_group:read","product_group:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productParent' => 'exact'])]
+    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Product::class)]
 
     private $productParent;
 

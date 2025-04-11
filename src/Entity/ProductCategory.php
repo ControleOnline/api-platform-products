@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -16,11 +17,7 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductCategory
- *
- * @ORM\Table(name="product_category", uniqueConstraints={@ORM\UniqueConstraint(name="product_id", columns={"product_id", "category_id"})}, indexes={@ORM\Index(name="category_id", columns={"category_id"}), @ORM\Index(name="IDX_CDFC73564584665A", columns={"product_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductCategoryRepository")
  */
-
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_ADMIN\') or is_granted(\'ROLE_CLIENT\')'),
@@ -37,44 +34,45 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
     denormalizationContext: ['groups' => ['product_category:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['product.product'])]
+#[ORM\Table(name: 'product_category')]
+#[ORM\Index(name: 'category_id', columns: ['category_id'])]
+#[ORM\Index(name: 'IDX_CDFC73564584665A', columns: ['product_id'])]
+#[ORM\UniqueConstraint(name: 'product_id', columns: ['product_id', 'category_id'])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductCategoryRepository::class)]
 
 class ProductCategory
 {
     /**
      * @var int
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_category:read"})
      */
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var ControleOnline\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="category_id", referencedColumnName="id")
-     * })
      * @Groups({"product_category:read","product_category:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['category' => 'exact'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.company' => 'exact'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['category.context' => 'exact'])]
+    #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Category::class)]
 
     private $category;
 
     /**
      * @var Product
      *
-     * @ORM\ManyToOne(targetEntity="Product")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
-     * })
      * @Groups({"product_category:read","product_category:write"})
      */
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: \Product::class)]
 
     private $product;
 

@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\Inventory;
@@ -19,9 +20,6 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 
 /**
  * ProductInventory
- *
- * @ORM\Table(name="product_inventory", indexes={@ORM\Index(name="inventory_id", columns={"inventory_id"}), @ORM\Index(name="product_id", columns={"product_id"})})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\ProductInventoryRepository")
  */
 #[ApiResource(
     operations: [
@@ -37,79 +35,79 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 )]
 #[ApiFilter(OrderFilter::class, properties: ['id', 'available', 'sales', 'ordered', 'transit'])]
 #[ApiFilter(SearchFilter::class, properties: ['id' => 'exact', 'inventory' => 'exact', 'product' => 'exact', 'productUnity' => 'exact'])]
+#[ORM\Table(name: 'product_inventory')]
+#[ORM\Index(name: 'inventory_id', columns: ['inventory_id'])]
+#[ORM\Index(name: 'product_id', columns: ['product_id'])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\ProductInventoryRepository::class)]
 class ProductInventory
 {
     /**
      * @var int
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
 
     /**
      * @var \ControleOnline\Entity\Inventory
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Inventory")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="inventory_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\JoinColumn(name: 'inventory_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Inventory::class)]
     private $inventory;
 
     /**
      * @var \ControleOnline\Entity\Product
-     * @ORM\ManyToOne(targetEntity="\ControleOnline\Entity\Product")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="product_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Product::class)]
     private $product;
 
 
 
     /**
      * @var int
-     * @ORM\Column(name="available", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'available', type: 'integer', nullable: false, options: ['default' => 0])]
     private $available = 0;
 
     /**
      * @var int
-     * @ORM\Column(name="sales", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'sales', type: 'integer', nullable: false, options: ['default' => 0])]
     private $sales = 0;
 
     /**
      * @var int
-     * @ORM\Column(name="ordered", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'ordered', type: 'integer', nullable: false, options: ['default' => 0])]
     private $ordered = 0;
 
     /**
      * @var int
-     * @ORM\Column(name="transit", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'transit', type: 'integer', nullable: false, options: ['default' => 0])]
     private $transit = 0;
 
     /**
      * @var int
-     * @ORM\Column(name="minimum", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'minimum', type: 'integer', nullable: false, options: ['default' => 0])]
     private $minimum = 0;
 
     /**
      * @var int
-     * @ORM\Column(name="maximum", type="integer", nullable=false, options={"default"=0})
      * @Groups({"product_inventory:read", "product_inventory:write"})
      */
+    #[ORM\Column(name: 'maximum', type: 'integer', nullable: false, options: ['default' => 0])]
     private $maximum = 0;
 
     public function getId(): ?int
