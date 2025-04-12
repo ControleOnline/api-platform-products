@@ -23,11 +23,11 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
  */
 #[ApiResource(
     operations: [
-        new Get(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')'),
+        new Get(security: 'is_granted(\'PUBLIC_ACCESS\')'),
         new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product_inventory:write']]),
         new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
-        new GetCollection(security: 'is_granted(\'IS_AUTHENTICATED_ANONYMOUSLY\')'),
+        new GetCollection(security: 'is_granted(\'PUBLIC_ACCESS\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
     normalizationContext: ['groups' => ['product_inventory:read']],
