@@ -2,6 +2,8 @@
 
 namespace ControleOnline\Entity;
 
+use Symfony\Component\Serializer\Attribute\Groups;
+
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
@@ -38,41 +40,41 @@ class ProductInventory
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $id;
 
     #[ORM\JoinColumn(name: 'inventory_id', referencedColumnName: 'id', nullable: false)]
     #[ORM\ManyToOne(targetEntity: Inventory::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $inventory;
 
     #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $product;
 
     #[ORM\Column(name: 'available', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $available = 0;
 
     #[ORM\Column(name: 'sales', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $sales = 0;
 
     #[ORM\Column(name: 'ordered', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $ordered = 0;
 
     #[ORM\Column(name: 'transit', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $transit = 0;
 
     #[ORM\Column(name: 'minimum', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $minimum = 0;
 
     #[ORM\Column(name: 'maximum', type: 'integer', nullable: false, options: ['default' => 0])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_inventory:read', 'product_inventory:write']])]
+    #[Groups(['product_inventory:read', 'product_inventory:write'])]
     private $maximum = 0;
 
     public function getId(): ?int

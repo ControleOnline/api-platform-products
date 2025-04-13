@@ -2,6 +2,8 @@
 
 namespace ControleOnline\Entity;
 
+use Symfony\Component\Serializer\Attribute\Groups;
+
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
@@ -41,47 +43,47 @@ class ProductGroup
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
     #[ORM\Column(name: 'product_group', type: 'string', length: 255, nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $productGroup;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
     #[ORM\Column(name: 'price_calculation', type: 'string', length: 0, nullable: false, options: ['default' => "'sum'"])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $priceCalculation = 'sum';
 
     #[ORM\Column(name: 'required', type: 'boolean', nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $required = false;
 
     #[ORM\Column(name: 'minimum', type: 'integer', nullable: true, options: ['default' => 'NULL'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $minimum = null;
 
     #[ORM\Column(name: 'maximum', type: 'integer', nullable: true, options: ['default' => 'NULL'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $maximum = null;
 
     #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $active = true;
 
     #[ORM\Column(name: 'group_order', type: 'integer', nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write', 'order_product:read']])]
+    #[Groups(['product_group:read', 'product_group:write', 'order_product:read'])]
     private $groupOrder = 0;
 
     #[ORM\OneToMany(targetEntity: ProductGroupProduct::class, mappedBy: 'productGroup', orphanRemoval: true)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:write']])]
+    #[Groups(['product_group:write'])]
     private $products;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productParent' => 'exact'])]
     #[ORM\JoinColumn(nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group:read', 'product_group:write']])]
+    #[Groups(['product_group:read', 'product_group:write'])]
     private $productParent;
 
     public function __construct()

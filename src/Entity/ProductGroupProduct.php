@@ -2,6 +2,8 @@
 
 namespace ControleOnline\Entity;
 
+use Symfony\Component\Serializer\Attribute\Groups;
+
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
@@ -39,41 +41,41 @@ class ProductGroupProduct
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
     #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $product;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
     #[ORM\JoinColumn(name: 'product_group_id', referencedColumnName: 'id', nullable: true)]
     #[ORM\ManyToOne(targetEntity: ProductGroup::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $productGroup;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productType' => 'exact'])]
     #[ORM\Column(name: 'product_type', type: 'string', columnDefinition: "ENUM('feedstock', 'component', 'package')", nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $productType;
 
     #[ORM\JoinColumn(name: 'product_child_id', referencedColumnName: 'id', nullable: true)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $productChild;
 
     #[ORM\Column(name: 'quantity', type: 'float', precision: 10, scale: 2, nullable: false, options: ['default' => '1.00'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $quantity = 0;
 
     #[ORM\Column(name: 'price', type: 'float', precision: 10, scale: 2, nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $price = 0;
 
     #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product_group_product:read', 'product_group:write', 'product_group_product:write']])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $active = true;
 
     public function getId()

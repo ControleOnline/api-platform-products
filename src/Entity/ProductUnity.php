@@ -2,6 +2,8 @@
 
 namespace ControleOnline\Entity;
 
+use Symfony\Component\Serializer\Attribute\Groups;
+
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -31,15 +33,15 @@ class ProductUnity
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[ApiResource(normalizationContext: ['groups' => ['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read']])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
     private $id;
 
     #[ORM\Column(name: 'product_unit', type: 'string', length: 3, nullable: false)]
-    #[ApiResource(normalizationContext: ['groups' => ['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read']])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
     private $productUnit;
 
     #[ORM\Column(name: 'unit_type', type: 'string', length: 0, nullable: false, options: ['default' => "'I'", 'comment' => 'Integer, Fractioned'])]
-    #[ApiResource(normalizationContext: ['groups' => ['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read']])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
     private $unitType = 'I';
 
     public function getId()
