@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use ControleOnline\Entity\People;
 use ControleOnline\Service\ProductService;
-use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\Security\Http\Attribute\Security;
 
 class ProductController extends AbstractController
 {
