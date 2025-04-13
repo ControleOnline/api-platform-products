@@ -6,7 +6,7 @@ use ControleOnline\Entity\Device;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use ControleOnline\Entity\People;
@@ -19,10 +19,8 @@ class ProductController extends AbstractController
         private ProductService $productService
     ) {}
 
-    /**
-     * @Route("/products/purchasing-suggestion", name="purchasing_suggestion", methods={"GET"})
-     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
-     */
+    #[Route('/products/purchasing-suggestion', name: 'purchasing_suggestion', methods: ['GET'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function getPurchasingSuggestion(Request $request): JsonResponse
     {
         $company =  $this->manager->getRepository(People::class)->find($request->get('company'));
@@ -30,10 +28,8 @@ class ProductController extends AbstractController
         return new JsonResponse($data);
     }
 
-    /**
-     * @Route("/products/purchasing-suggestion/print", name="purchasing_suggestion_print", methods={"POST"})
-     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
-     */
+    #[Route('/products/purchasing-suggestion/print', name: 'purchasing_suggestion_print', methods: ['POST'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function printPurchasingSuggestion(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -44,22 +40,17 @@ class ProductController extends AbstractController
         return new JsonResponse($printData);
     }
 
-
-
-    /**
-     * @Route("/products/inventory", name="products_inventory", methods={"GET"})
-     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
-     */
+    #[Route('/products/inventory', name: 'products_inventory', methods: ['GET'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function getProductsInventory(Request $request): JsonResponse
     {
         $company =  $this->manager->getRepository(People::class)->find($request->get('company'));
         $data = $this->productService->getProductsInventory($company);
         return new JsonResponse($data);
     }
-    /**
-     * @Route("/products/inventory/print", name="products_inventory_print", methods={"POST"})
-     * @Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")
-     */
+
+    #[Route('/products/inventory/print', name: 'products_inventory_print', methods: ['POST'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function print(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
