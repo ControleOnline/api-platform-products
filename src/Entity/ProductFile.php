@@ -42,7 +42,7 @@ class ProductFile
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     #[Groups(['product:read', 'order_product:read', 'product_file:read', 'product_category:read'])]
-    private int $id;
+    private int $id = 0;
 
     #[ORM\JoinColumn(name: 'file_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: File::class)]

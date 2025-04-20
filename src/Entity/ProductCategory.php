@@ -44,7 +44,7 @@ class ProductCategory
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     #[Groups(['product_category:read'])]
-    private int $id;
+    private int $id = 0;
 
     #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: Category::class)]

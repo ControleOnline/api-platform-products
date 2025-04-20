@@ -64,7 +64,6 @@ class ProductService
 
             $this->printService->addLine("", "", "-");
         }
-error_log('llll');
         return $this->printService->generatePrintData($device);
     }
 

@@ -68,18 +68,12 @@ class ProductController extends AbstractController
         try {
             $data = json_decode($request->getContent(), true);
             error_log(json_encode($data));
-            
             $device = $this->manager->getRepository(Device::class)->findOneBy([
                 'device' => $data['device']
             ]);
-            error_log('rr');
 
             $company = $this->manager->getRepository(People::class)->find($data['people']);
-            error_log('rr');
-
             $printData = $this->productService->productsInventoryPrintData($company, $device);
-            error_log('rr');
-
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
         } catch (Exception $e) {
             return new JsonResponse($this->hydratorService->error($e));
