@@ -67,6 +67,8 @@ class ProductController extends AbstractController
     {
         try {
             $data = json_decode($request->getContent(), true);
+            error_log($data);
+            
             $device = $this->manager->getRepository(Device::class)->findOneBy([
                 'device' => $data['device']
             ]);
