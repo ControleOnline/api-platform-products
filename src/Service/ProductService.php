@@ -5,9 +5,10 @@ namespace ControleOnline\Service;
 use ControleOnline\Entity\Device;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
+use ControleOnline\Entity\Spool;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
- AS Security;
+as Security;
 use Doctrine\ORM\QueryBuilder;
 
 class ProductService
@@ -29,7 +30,7 @@ class ProductService
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
     }
 
-    public function productsInventoryPrintData(?People $provider, string $printType, string $deviceType)
+    public function productsInventoryPrintData(?People $provider, Device $device): Spool
     {
         $products = $this->getProductsInventory($provider);
 
@@ -43,7 +44,7 @@ class ProductService
         }
 
         foreach ($groupedByInventory as $inventoryName => $items) {
-            $companyName = $items[0]['company_name'] ;
+            $companyName = $items[0]['company_name'];
             $this->printService->addLine("", "", "-");
             $this->printService->addLine($companyName, "", " ");
             $this->printService->addLine("INVENTARIO: " . $inventoryName, "", " ");
@@ -64,7 +65,7 @@ class ProductService
             $this->printService->addLine("", "", "-");
         }
 
-        return $this->printService->generatePrintData($printType, $deviceType);
+        return $this->printService->generatePrintData($device);
     }
 
     public function getPurchasingSuggestion(People $company)
@@ -72,13 +73,13 @@ class ProductService
         return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
     }
 
-    public function purchasingSuggestionPrintData(?People $provider, string $printType, string $deviceType)
+    public function purchasingSuggestionPrintData(?People $provider, Device $device): Spool
     {
         $products = $this->getPurchasingSuggestion($provider);
 
         $groupedByCompany = [];
         foreach ($products as $product) {
-            $companyName = $product['company_name'] ;
+            $companyName = $product['company_name'];
             if (!isset($groupedByCompany[$companyName])) {
                 $groupedByCompany[$companyName] = [];
             }
@@ -110,6 +111,6 @@ class ProductService
             $this->printService->addLine("", "", "-");
         }
 
-        return $this->printService->generatePrintData($printType, $deviceType);
+        return $this->printService->generatePrintData($device);
     }
 }
