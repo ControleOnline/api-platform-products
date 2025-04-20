@@ -25,12 +25,12 @@ class ProductService
         // $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
     }
 
-    public function getProductsInventory(?People $company): array
+    public function getProductsInventory(People $company): array
     {
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
     }
 
-    public function productsInventoryPrintData(?People $provider, Device $device): Spool
+    public function productsInventoryPrintData(People $provider, Device $device): Spool
     {
         $products = $this->getProductsInventory($provider);
 
@@ -64,7 +64,7 @@ class ProductService
 
             $this->printService->addLine("", "", "-");
         }
-        return $this->printService->generatePrintData($device);
+        return $this->printService->generatePrintData($device, $provider);
     }
 
     public function getPurchasingSuggestion(People $company)
@@ -72,7 +72,7 @@ class ProductService
         return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
     }
 
-    public function purchasingSuggestionPrintData(?People $provider, Device $device): Spool
+    public function purchasingSuggestionPrintData(People $provider, Device $device): Spool
     {
         $products = $this->getPurchasingSuggestion($provider);
 
@@ -110,6 +110,6 @@ class ProductService
             $this->printService->addLine("", "", "-");
         }
 
-        return $this->printService->generatePrintData($device);
+        return $this->printService->generatePrintData($device, $provider);
     }
 }
