@@ -59,7 +59,7 @@ class ProductGroupProduct
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productType' => 'exact'])]
     #[ORM\Column(name: 'product_type', type: 'string', columnDefinition: "ENUM('feedstock', 'component', 'package')", nullable: false)]
     #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
-    private $productType;
+    private $productType = 'component';
 
     #[ORM\JoinColumn(name: 'product_child_id', referencedColumnName: 'id', nullable: true)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
