@@ -59,7 +59,7 @@ class Product
     #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]
     #[ORM\OneToMany(targetEntity: ProductFile::class, mappedBy: 'product')]
-    #[Groups(['product:read', 'product_category:read', 'order_product:read'])]
+    #[Groups(['product:read', 'product_category:read','order_details:read', 'order_product:read'])]
     private $productFiles;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCategory.category' => 'exact'])]
