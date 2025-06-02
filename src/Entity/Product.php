@@ -53,13 +53,13 @@ class Product
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'partial'])]
     #[ORM\Column(name: 'product', type: 'string', length: 255, nullable: true)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $product;
 
     #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]
     #[ORM\OneToMany(targetEntity: ProductFile::class, mappedBy: 'product')]
-    #[Groups(['product:read', 'product_category:read','order_details:read', 'order_product:read'])]
+    #[Groups(['product:read', 'product_category:read','order_details:read', 'order:write', 'order_product:read'])]
     private $productFiles;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCategory.category' => 'exact'])]
@@ -68,51 +68,51 @@ class Product
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['sku' => 'partial'])]
     #[ORM\Column(name: 'sku', type: 'string', length: 32, nullable: true, options: ['default' => 'NULL'])]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $sku = null;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['type' => 'exact'])]
     #[ORM\Column(name: 'type', type: 'string', length: 0, nullable: false, options: ['default' => "'product'"])]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $type = 'product';
 
     #[ORM\Column(name: 'price', type: 'float', precision: 10, scale: 0, nullable: false)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $price = 0;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCondition' => 'exact'])]
     #[ORM\Column(name: 'product_condition', type: 'string', length: 0, nullable: false, options: ['default' => "'new'"])]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $productCondition = 'new';
 
     #[ORM\Column(name: 'description', type: 'string', length: 0, nullable: false)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $description = '';
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['featured' => 'exact'])]
     #[ORM\Column(name: 'featured', type: 'boolean', nullable: false, options: ['default' => '0'])]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $featured = false;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['active' => 'exact'])]
     #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $active = true;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
     #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: People::class)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $company;
 
     #[ORM\JoinColumn(name: 'product_unity_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: ProductUnity::class)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $productUnit;
 
     #[ORM\JoinColumn(name: 'queue_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: Queue::class)]
-    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write', 'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $queue;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['defaultOutInventory' => 'exact'])]

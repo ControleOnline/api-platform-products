@@ -41,12 +41,12 @@ class ProductFile
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product:read', 'order_product:read', 'order_details:read', 'product_file:read', 'product_category:read'])]
+    #[Groups(['product:read', 'order_product:read', 'order_details:read', 'order:write', 'product_file:read', 'product_category:read'])]
     private int $id = 0;
 
     #[ORM\JoinColumn(name: 'file_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: File::class)]
-    #[Groups(['product:read', 'order_product:read', 'order_details:read', 'product_file:read', 'product_file:write', 'product_category:read'])]
+    #[Groups(['product:read', 'order_product:read', 'order_details:read', 'order:write', 'product_file:read', 'product_file:write', 'product_category:read'])]
     private File $file;
 
     #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id')]
