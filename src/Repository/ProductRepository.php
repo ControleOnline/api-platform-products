@@ -126,4 +126,18 @@ class ProductRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    public function findProductBySkuAsInteger(int $sku, People $company): ?Product
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = 'SELECT * FROM product WHERE CAST(sku AS UNSIGNED) = :sku AND company_id = :company';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue('sku', $sku);
+        $stmt->bindValue('company', $company->getId());
+        $result = $stmt->executeQuery();
+
+        $data = $result->fetchAssociative();
+        return $data ? $this->getEntityManager()->getRepository(Product::class)->find($data['id']) : null;
+    }
+
 }

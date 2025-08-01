@@ -15,6 +15,7 @@ use ControleOnline\Service\HydratorService;
 use ControleOnline\Service\ProductService;
 use Exception;
 use Symfony\Component\Security\Http\Attribute\Security;
+use ControleOnline\Entity\Product;
 
 class ProductController extends AbstractController
 {
@@ -78,4 +79,46 @@ class ProductController extends AbstractController
             return new JsonResponse($this->hydratorService->error($e));
         }
     }
+
+    #[Route('/products/sku', name: 'product_by_sku', methods: ['POST'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    public function getProductBySku(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!isset($data['sku'], $data['people'])) {
+                return new JsonResponse(['error' => 'Parâmetros obrigatórios: sku e people'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $sku = (int) ltrim($data['sku'], '0');
+            $company = $this->manager->getRepository(People::class)->find($data['people']);
+
+            if (!$company) {
+                return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
+            }
+
+            $product = $this->manager
+                ->getRepository(Product::class)
+                ->findProductBySkuAsInteger($sku, $company);
+
+            if (!$product) {
+                return new JsonResponse(['error' => 'Produto não encontrado'], Response::HTTP_NOT_FOUND);
+            }
+
+            return new JsonResponse(
+                $this->hydratorService->item(Product::class, $product->getId(), 'product:read'),
+                Response::HTTP_OK
+            );
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/teste', name: 'teste', methods: ['GET'])]
+    public function teste(): JsonResponse
+    {
+        return new JsonResponse(['message' => 'rota funcionando']);
+    }
+
 }
