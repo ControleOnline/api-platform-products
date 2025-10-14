@@ -80,11 +80,11 @@ class ProductGroup
     #[Groups(['product_group:write'])]
     private $products;
 
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productParent' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact'])]
     #[ORM\JoinColumn(nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
     #[Groups(['product_group:read', 'product_group:write'])]
-    private $productParent;
+    private $parentProduct;
 
     public function __construct()
     {
@@ -207,14 +207,14 @@ class ProductGroup
         return $this;
     }
 
-    public function getProductParent()
+    public function getParentProduct()
     {
-        return $this->productParent;
+        return $this->parentProduct;
     }
 
-    public function setProductParent($productParent): self
+    public function setParentProduct($parentProduct): self
     {
-        $this->productParent = $productParent;
+        $this->parentProduct = $parentProduct;
         return $this;
     }
 }
