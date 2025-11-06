@@ -15,7 +15,7 @@ use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Repository\InventoryRepository;
-use ControleOnline\Listener\LogListener;
+
 
 #[ORM\Table(name: 'inventory')]
 #[ORM\Index(name: 'people_id', columns: ['people_id'])]

@@ -13,7 +13,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-use ControleOnline\Listener\LogListener;
+
 use ControleOnline\Repository\ProductGroupProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 
