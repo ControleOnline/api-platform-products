@@ -106,7 +106,7 @@ class Product
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
     #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: People::class)]
-    #[Groups(['product_category:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order:write',  'product:write'])]
     private $company;
 
     #[ORM\JoinColumn(name: 'product_unity_id', referencedColumnName: 'id')]
