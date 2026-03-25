@@ -17,6 +17,6 @@ services:
         tags: ['console.command']
     ControleOnline\Filter\:
         resource: '../../src/Filter'    
-    ControleOnline\Service\Imports\ClientImportService:
+    ControleOnline\Service\Imports\ProductImportService:
         tags:
             - app.import_processor            
