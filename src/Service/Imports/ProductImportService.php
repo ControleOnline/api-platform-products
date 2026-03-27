@@ -47,7 +47,7 @@ class ProductImportService implements ImportProcessorInterface
     public function process(Import $import): void
     {
         $file = $import->getFile();
-        $content = $file?->getContent() ?? '';
+        $content = $file?->getContent(true) ?? '';
 
         $handle = fopen('php://temp', 'r+');
         if ($handle === false) {
