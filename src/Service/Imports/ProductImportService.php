@@ -5,7 +5,7 @@ namespace ControleOnline\Service\Imports;
 use ControleOnline\Entity\Import;
 use ControleOnline\Service\ProductService;
 
-class ProductImportService extends AbstractCsvImportProcessor
+class ProductImportService implements ImportProcessorInterface
 {
     private const CSV_HEADERS = [
         'category_name',
@@ -106,9 +106,9 @@ class ProductImportService extends AbstractCsvImportProcessor
         $import->setFeedback(sprintf('%d linha(s) importada(s) com sucesso.', $successCount));
     }
 
-    public function getExampleCsv(): string
+    public function getExampleCsv(): array
     {
-        $rows = [
+        return [
             [
                 ...self::CSV_HEADERS,
             ],
@@ -194,7 +194,6 @@ class ProductImportService extends AbstractCsvImportProcessor
                 '',
             ],
         ];
-        return $this->generateUtf8Csv($rows);
     }
 
     private function normalizeHeaders(array $headers): array
