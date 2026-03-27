@@ -284,7 +284,7 @@ class Product
         return $this->defaultOutInventory;
     }
 
-    public function setDefaultOutInventory(Inventory $defaultOutInventory): self
+    public function setDefaultOutInventory(?Inventory $defaultOutInventory): self
     {
         $this->defaultOutInventory = $defaultOutInventory;
         return $this;
@@ -295,7 +295,7 @@ class Product
         return $this->defaultInInventory;
     }
 
-    public function setDefaultInInventory(Inventory $defaultInInventory): self
+    public function setDefaultInInventory(?Inventory $defaultInInventory): self
     {
         $this->defaultInInventory = $defaultInInventory;
         return $this;
