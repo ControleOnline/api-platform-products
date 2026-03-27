@@ -5,7 +5,7 @@ namespace ControleOnline\Service\Imports;
 use ControleOnline\Entity\Import;
 use ControleOnline\Service\ProductService;
 
-class ProductImportService extends ImportCommon implements ImportProcessorInterface
+class ProductImportService extends ImportCommon
 {
     private const CSV_HEADERS = [
         'category_name',
