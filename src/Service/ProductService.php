@@ -124,7 +124,7 @@ class ProductService
         return $this->printService->generatePrintData($device, $provider);
     }
 
-    public function importProductsFromCSV(array $row, ?People $company): void
+    public function importFromCSV(array $row, ?People $company): void
     {
         if (!$company instanceof People) {
             throw new \InvalidArgumentException('Empresa da importacao nao informada.');
