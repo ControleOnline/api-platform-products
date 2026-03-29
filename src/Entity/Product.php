@@ -51,7 +51,7 @@ class Product
     #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'orders-queue:read', 'order_product:read'])]
     private $id;
 
-    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
+    #[Groups(['product_category:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $extraData = null;
 
 
