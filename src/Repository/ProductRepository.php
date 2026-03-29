@@ -28,37 +28,6 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    public function updateProductInventory(): void
-    {
-        $companies = implode(',', array_map(
-            fn($c) => $c->getId(),
-            $this->peopleService->getMyCompanies()
-        ));
-
-        $purchasing_status = '7';
-        $ordered_status = '5';
-        $transit_status = '6';
-        $sales_status = '6,7';
-        $all_status = '5,6,7';
-
-        try {
-            $conn = $this->getEntityManager()->getConnection();
-            $conn->executeStatement(
-                'CALL update_product_inventory(?, ?, ?, ?, ?, ?)',
-                [
-                    $companies,
-                    $purchasing_status,
-                    $ordered_status,
-                    $transit_status,
-                    $sales_status,
-                    $all_status
-                ]
-            );
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
-        }
-    }
-
     public function getProductsInventory(?People $company): array
     {
         $qb = $this->createQueryBuilder('p');
@@ -91,7 +60,6 @@ class ProductRepository extends ServiceEntityRepository
 
     public function getPurchasingSuggestion(?People $company): array
     {
-        $this->updateProductInventory();
         $qb = $this->createQueryBuilder('p')
             ->select([
                 'pe.id AS company_id',
