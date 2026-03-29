@@ -131,11 +131,6 @@ class Product
     #[Groups(['product:read', 'orders-queue:read', 'product:write'])]
     private $defaultInInventory;
 
-
-    #[ORM\Column(name: 'comment', type: 'string',  nullable: true)]
-    #[Groups(['product:read', 'orders-queue:read', 'product:write'])]
-    private $comment;
-
     public function __construct()
     {
         $this->productFiles = new ArrayCollection();
@@ -315,17 +310,5 @@ class Product
     public function getExtraData()
     {
         return $this->extraData;
-    }
-
-    public function getComment()
-    {
-        return $this->comment;
-    }
-
-    public function setComment($comment): self
-    {
-        $this->comment = $comment;
-
-        return $this;
     }
 }
