@@ -33,7 +33,7 @@ use Doctrine\ORM\Mapping as ORM;
     normalizationContext: ['groups' => ['product_inventory:read']],
     denormalizationContext: ['groups' => ['product_inventory:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['id', 'available', 'sales', 'ordered', 'transit'])]
+#[ApiFilter(OrderFilter::class, properties: ['id', 'available', 'sales', 'purchases', 'transit'])]
 #[ApiFilter(SearchFilter::class, properties: ['id' => 'exact', 'inventory' => 'exact', 'product' => 'exact'])]
 #[ORM\Table(name: 'product_inventory')]
 #[ORM\Index(name: 'inventory_id', columns: ['inventory_id'])]
@@ -115,9 +115,9 @@ class ProductInventory
     {
         return $this->sales;
     }
-    public function getOrdered(): int
+    public function getPurchases(): int
     {
-        return $this->ordered;
+        return $this->purchases;
     }
     public function getTransit(): int
     {
@@ -132,9 +132,9 @@ class ProductInventory
     {
         throw new \RuntimeException('sales não pode ser alterado manualmente.');
     }
-    public function setOrdered(int $v): self
+    public function setPurchases(int $v): self
     {
-        throw new \RuntimeException('ordered não pode ser alterado manualmente.');
+        throw new \RuntimeException('purchases não pode ser alterado manualmente.');
     }
     public function setTransit(int $v): self
     {
