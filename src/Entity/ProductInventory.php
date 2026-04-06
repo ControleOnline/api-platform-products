@@ -68,7 +68,7 @@ class ProductInventory
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
     #[Groups(['product_inventory:read'])]
-    private int $ordered = 0;
+    private int $purchases = 0;
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
     #[Groups(['product_inventory:read'])]
