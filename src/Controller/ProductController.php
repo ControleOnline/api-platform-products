@@ -123,6 +123,7 @@ class ProductController extends AbstractController
     public function downloadMenuCatalog(Request $request): Response
     {
         $companyId = (int) preg_replace('/\D+/', '', (string) $request->get('company'));
+        $modelId = (int) preg_replace('/\D+/', '', (string) $request->get('model'));
 
         if ($companyId <= 0) {
             return new JsonResponse(
@@ -138,7 +139,10 @@ class ProductController extends AbstractController
         }
 
         try {
-            $pdf = $this->productMenuService->generateCatalogPdf($company);
+            $pdf = $this->productMenuService->generateCatalogPdf(
+                $company,
+                $modelId > 0 ? $modelId : null
+            );
             $filename = $this->buildCatalogFilename($company);
             $response = new Response($pdf, Response::HTTP_OK, [
                 'Content-Type' => 'application/pdf',

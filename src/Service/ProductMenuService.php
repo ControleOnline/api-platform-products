@@ -3,14 +3,16 @@
 namespace ControleOnline\Service;
 
 use ControleOnline\Entity\File;
+use ControleOnline\Entity\Model;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
-use ControleOnline\Entity\ProductCategory;
 use ControleOnline\Entity\ProductGroup;
 use ControleOnline\Entity\ProductGroupProduct;
-use Doctrine\ORM\EntityManagerInterface;
+use ControleOnline\Repository\ModelRepository;
+use ControleOnline\Repository\ProductCategoryRepository;
+use ControleOnline\Repository\ProductGroupRepository;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Twig\Environment;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductMenuService
 {
@@ -18,21 +20,33 @@ class ProductMenuService
     public const CONFIG_HIDDEN_GROUP_IDS = 'menu-catalog-hidden-group-ids';
 
     private const CATEGORY_CONTEXT = 'products';
+    private const MODEL_CONTEXT = 'menu';
     private const MAIN_PRODUCT_TYPES = ['manufactured', 'custom', 'product', 'service'];
     private const GROUP_COMPONENT_TYPE = 'component';
 
     public function __construct(
-        private EntityManagerInterface $manager,
+        private ProductCategoryRepository $productCategoryRepository,
+        private ProductGroupRepository $productGroupRepository,
+        private ModelRepository $modelRepository,
         private ConfigService $configService,
+        private ModelService $modelService,
         private PdfService $pdfService,
         private PeopleService $peopleService,
-        private Environment $twig,
     ) {}
 
-    public function generateCatalogPdf(People $company): string
+    public function generateCatalogPdf(People $company, ?int $modelId = null): string
     {
         $catalog = $this->buildCatalog($company);
-        $html = $this->twig->render('products/menu_catalog.html.twig', $catalog);
+        $model = $this->resolveMenuModel($company, $modelId);
+
+        $catalog['menuModel'] = $model;
+        $catalog['menuModelName'] = trim((string) $model->getModel());
+
+        $html = $this->modelService->render($model, [
+            ...$catalog,
+            'catalog' => $catalog,
+            'service' => $this,
+        ]);
 
         return $this->pdfService->convertHtmlToPdf($html);
     }
@@ -48,7 +62,12 @@ class ProductMenuService
             $this->configService->getConfig($company, self::CONFIG_HIDDEN_GROUP_IDS, true)
         );
 
-        $productCategories = $this->getVisibleProductCategories($company, $hiddenCategoryIds);
+        $productCategories = $this->productCategoryRepository->findVisibleForMenuCatalog(
+            $company,
+            self::CATEGORY_CONTEXT,
+            self::MAIN_PRODUCT_TYPES,
+            $hiddenCategoryIds
+        );
 
         $categoriesById = [];
         $customProducts = [];
@@ -74,7 +93,13 @@ class ProductMenuService
             }
         }
 
-        $groupsByProduct = $this->getProductGroups(array_values($customProducts), $hiddenGroupIds);
+        $groupsByProduct = $this->groupProductsByCustomProduct(
+            $this->productGroupRepository->findVisibleComponentGroupsForMenuCatalog(
+                array_values($customProducts),
+                self::GROUP_COMPONENT_TYPE,
+                $hiddenGroupIds
+            )
+        );
 
         foreach ($categoriesById as &$category) {
             foreach ($category['products'] as &$product) {
@@ -115,6 +140,8 @@ class ProductMenuService
             )),
             'hiddenCategoryCount' => count($hiddenCategoryIds),
             'hiddenGroupCount' => count($hiddenGroupIds),
+            'menuModel' => null,
+            'menuModelName' => null,
         ];
     }
 
@@ -140,72 +167,30 @@ class ProductMenuService
         }
     }
 
-    /**
-     * @return ProductCategory[]
-     */
-    private function getVisibleProductCategories(People $company, array $hiddenCategoryIds): array
+    private function resolveMenuModel(People $company, ?int $modelId = null): Model
     {
-        $qb = $this->manager->getRepository(ProductCategory::class)
-            ->createQueryBuilder('productCategory')
-            ->addSelect('category', 'product')
-            ->join('productCategory.category', 'category')
-            ->join('productCategory.product', 'product')
-            ->andWhere('category.company = :company')
-            ->andWhere('category.context = :context')
-            ->andWhere('product.company = :company')
-            ->andWhere('product.active = true')
-            ->andWhere('product.type IN (:types)')
-            ->setParameter('company', $company)
-            ->setParameter('context', self::CATEGORY_CONTEXT)
-            ->setParameter('types', self::MAIN_PRODUCT_TYPES)
-            ->orderBy('category.name', 'ASC')
-            ->addOrderBy('product.featured', 'DESC')
-            ->addOrderBy('product.product', 'ASC');
+        $model = $this->modelRepository->findCompanyContextModel(
+            $company,
+            self::MODEL_CONTEXT,
+            $modelId
+        );
 
-        if (!empty($hiddenCategoryIds)) {
-            $qb->andWhere('category.id NOT IN (:hiddenCategoryIds)')
-                ->setParameter('hiddenCategoryIds', $hiddenCategoryIds);
+        if (!$model instanceof Model) {
+            throw new NotFoundHttpException(
+                'Nenhum modelo de cardapio com contexto menu foi encontrado para a empresa.'
+            );
         }
 
-        return $qb->getQuery()->getResult();
+        return $model;
     }
 
     /**
-     * @param Product[] $customProducts
+     * @param ProductGroup[] $groups
      *
      * @return array<int, array<int, array<string, mixed>>>
      */
-    private function getProductGroups(array $customProducts, array $hiddenGroupIds): array
+    private function groupProductsByCustomProduct(array $groups): array
     {
-        if (empty($customProducts)) {
-            return [];
-        }
-
-        $qb = $this->manager->getRepository(ProductGroup::class)
-            ->createQueryBuilder('productGroup')
-            ->addSelect('groupProduct', 'childProduct')
-            ->leftJoin(
-                'productGroup.products',
-                'groupProduct',
-                'WITH',
-                'groupProduct.active = true AND groupProduct.productType = :productType'
-            )
-            ->leftJoin('groupProduct.productChild', 'childProduct')
-            ->andWhere('productGroup.parentProduct IN (:products)')
-            ->andWhere('productGroup.active = true')
-            ->setParameter('products', $customProducts)
-            ->setParameter('productType', self::GROUP_COMPONENT_TYPE)
-            ->orderBy('productGroup.groupOrder', 'ASC')
-            ->addOrderBy('productGroup.productGroup', 'ASC')
-            ->addOrderBy('childProduct.product', 'ASC');
-
-        if (!empty($hiddenGroupIds)) {
-            $qb->andWhere('productGroup.id NOT IN (:hiddenGroupIds)')
-                ->setParameter('hiddenGroupIds', $hiddenGroupIds);
-        }
-
-        /** @var ProductGroup[] $groups */
-        $groups = $qb->getQuery()->getResult();
         $groupedProducts = [];
 
         foreach ($groups as $group) {

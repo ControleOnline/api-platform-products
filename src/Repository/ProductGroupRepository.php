@@ -2,6 +2,7 @@
 
 namespace ControleOnline\Repository;
 
+use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\OptimisticLockException;
@@ -47,32 +48,43 @@ class ProductGroupRepository extends ServiceEntityRepository
         }
     }
 
-    // /**
-    //  * @return ProductGroup[] Returns an array of ProductGroup objects
-    //  */
-    /*
-    public function findByExampleField($value)
-    {
-        return $this->createQueryBuilder('p')
-            ->andWhere('p.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('p.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-    */
+    /**
+     * @param Product[] $products
+     * @param int[] $hiddenGroupIds
+     *
+     * @return ProductGroup[]
+     */
+    public function findVisibleComponentGroupsForMenuCatalog(
+        array $products,
+        string $componentType,
+        array $hiddenGroupIds = []
+    ): array {
+        if (empty($products)) {
+            return [];
+        }
 
-    /*
-    public function findOneBySomeField($value): ?ProductGroup
-    {
-        return $this->createQueryBuilder('p')
-            ->andWhere('p.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
+        $qb = $this->createQueryBuilder('productGroup')
+            ->addSelect('groupProduct', 'childProduct')
+            ->leftJoin(
+                'productGroup.products',
+                'groupProduct',
+                'WITH',
+                'groupProduct.active = true AND groupProduct.productType = :productType'
+            )
+            ->leftJoin('groupProduct.productChild', 'childProduct')
+            ->andWhere('productGroup.parentProduct IN (:products)')
+            ->andWhere('productGroup.active = true')
+            ->setParameter('products', $products)
+            ->setParameter('productType', $componentType)
+            ->orderBy('productGroup.groupOrder', 'ASC')
+            ->addOrderBy('productGroup.productGroup', 'ASC')
+            ->addOrderBy('childProduct.product', 'ASC');
+
+        if (!empty($hiddenGroupIds)) {
+            $qb->andWhere('productGroup.id NOT IN (:hiddenGroupIds)')
+                ->setParameter('hiddenGroupIds', $hiddenGroupIds);
+        }
+
+        return $qb->getQuery()->getResult();
     }
-    */
 }
