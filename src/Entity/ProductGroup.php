@@ -34,7 +34,7 @@ use Doctrine\ORM\Mapping as ORM;
     normalizationContext: ['groups' => ['product_group:read']],
     denormalizationContext: ['groups' => ['product_group:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['productGroup'])]
+#[ApiFilter(OrderFilter::class, properties: ['productGroup', 'groupOrder'])]
 #[ORM\Table(name: 'product_group')]
 #[ORM\Entity(repositoryClass: ProductGroupRepository::class)]
 class ProductGroup
@@ -80,7 +80,7 @@ class ProductGroup
     #[Groups(['product_group:write'])]
     private $products;
 
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact'])]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact', 'parentProduct.company' => 'exact'])]
     #[ORM\JoinColumn(nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
     #[Groups(['product_group:read', 'orders-queue:read', 'product_group:write'])]

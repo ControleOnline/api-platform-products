@@ -7,11 +7,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Spool;
 use ControleOnline\Service\HydratorService;
+use ControleOnline\Service\ProductMenuService;
 use ControleOnline\Service\ProductService;
 use Exception;
 use Symfony\Component\Security\Http\Attribute\Security;
@@ -22,6 +24,7 @@ class ProductController extends AbstractController
     public function __construct(
         private EntityManagerInterface $manager,
         private ProductService $productService,
+        private ProductMenuService $productMenuService,
         private HydratorService $hydratorService
 
     ) {}
@@ -115,10 +118,61 @@ class ProductController extends AbstractController
         }
     }
 
+    #[Route('/products/menu/download', name: 'product_menu_download', methods: ['GET'])]
+    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    public function downloadMenuCatalog(Request $request): Response
+    {
+        $companyId = (int) preg_replace('/\D+/', '', (string) $request->get('company'));
+
+        if ($companyId <= 0) {
+            return new JsonResponse(
+                ['error' => 'Parametro obrigatorio: company'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $company = $this->manager->getRepository(People::class)->find($companyId);
+
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa nao encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $pdf = $this->productMenuService->generateCatalogPdf($company);
+            $filename = $this->buildCatalogFilename($company);
+            $response = new Response($pdf, Response::HTTP_OK, [
+                'Content-Type' => 'application/pdf',
+            ]);
+
+            $response->headers->set(
+                'Content-Disposition',
+                HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename)
+            );
+
+            return $response;
+        } catch (\Throwable $exception) {
+            return new JsonResponse(
+                ['error' => $exception->getMessage()],
+                $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                    ? $exception->getStatusCode()
+                    : Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
     #[Route('/teste', name: 'teste', methods: ['GET'])]
     public function teste(): JsonResponse
     {
         return new JsonResponse(['message' => 'rota funcionando']);
     }
 
+    private function buildCatalogFilename(People $company): string
+    {
+        $baseName = trim((string) ($company->getAlias() ?: $company->getName()));
+        $slug = strtolower((string) iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $baseName));
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug ?? '');
+        $slug = trim((string) $slug, '-');
+
+        return sprintf('cardapio-%s.pdf', $slug !== '' ? $slug : $company->getId());
+    }
 }
