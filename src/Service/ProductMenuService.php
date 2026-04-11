@@ -13,6 +13,7 @@ use ControleOnline\Repository\ProductCategoryRepository;
 use ControleOnline\Repository\ProductGroupRepository;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Twig\Environment;
 
 class ProductMenuService
 {
@@ -29,9 +30,9 @@ class ProductMenuService
         private ProductGroupRepository $productGroupRepository,
         private ModelRepository $modelRepository,
         private ConfigService $configService,
-        private ModelService $modelService,
         private PdfService $pdfService,
         private PeopleService $peopleService,
+        private Environment $twig,
     ) {}
 
     public function generateCatalogPdf(People $company, ?int $modelId = null): string
@@ -42,7 +43,7 @@ class ProductMenuService
         $catalog['menuModel'] = $model;
         $catalog['menuModelName'] = trim((string) $model->getModel());
 
-        $html = $this->modelService->render($model, [
+        $html = $this->renderMenuModel($model, [
             ...$catalog,
             'catalog' => $catalog,
             'service' => $this,
@@ -182,6 +183,24 @@ class ProductMenuService
         }
 
         return $model;
+    }
+
+    private function renderMenuModel(Model $model, array $data = []): string
+    {
+        $file = $model->getFile();
+
+        if (!$file instanceof File) {
+            throw new NotFoundHttpException('O modelo de cardapio selecionado nao possui arquivo vinculado.');
+        }
+
+        $content = $file->getContent(true);
+        if (trim($content) === '') {
+            throw new NotFoundHttpException('O modelo de cardapio selecionado nao possui conteudo.');
+        }
+
+        $template = $this->twig->createTemplate($content);
+
+        return $template->render($data);
     }
 
     /**
