@@ -11,8 +11,10 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ControleOnline\Repository\ProductPeopleRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\SerializedName;
 
 #[ApiResource(
     operations: [
@@ -37,52 +39,55 @@ use Symfony\Component\Serializer\Attribute\Groups;
     'priority',
     'createdAt'
 ])]
-#[ORM\Entity]
 #[ORM\Table(name: 'product_people')]
+#[ORM\Index(name: 'IDX_PRODUCT_PEOPLE_PRODUCT', columns: ['product_id'])]
+#[ORM\Index(name: 'IDX_PRODUCT_PEOPLE_PEOPLE', columns: ['people_id'])]
+#[ORM\Entity(repositoryClass: ProductPeopleRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class ProductPeople
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['product_people:read'])]
+    #[Groups(['product_people:read', 'product:read', 'people:read'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'productPeople')]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     #[Groups(['product_people:read', 'product_people:write'])]
     private ?Product $product = null;
 
-    #[ORM\ManyToOne(targetEntity: People::class)]
-    #[ORM\JoinColumn(name: 'people_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: People::class, inversedBy: 'productPeople')]
+    #[ORM\JoinColumn(name: 'people_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     #[Groups(['product_people:read', 'product_people:write'])]
     private ?People $people = null;
 
-    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'supplier'])]
-    #[Groups(['product_people:read', 'product_people:write'])]
+    #[ORM\Column(type: 'string', columnDefinition: "ENUM('supplier','manufacturer','distributor')", options: ['default' => 'supplier'])]
+    #[Groups(['product_people:read', 'product_people:write', 'product:read', 'people:read'])]
     private string $role = 'supplier';
 
     #[ORM\Column(name: 'cost_price', type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    #[Groups(['product_people:read', 'product_people:write'])]
+    #[Groups(['product_people:read', 'product_people:write', 'product:read', 'people:read'])]
     private ?string $costPrice = null;
 
     #[ORM\Column(name: 'lead_time_days', type: 'integer', nullable: true)]
-    #[Groups(['product_people:read', 'product_people:write'])]
+    #[Groups(['product_people:read', 'product_people:write', 'product:read', 'people:read'])]
     private ?int $leadTimeDays = null;
 
     #[ORM\Column(name: 'supplier_sku', type: 'string', length: 100, nullable: true)]
-    #[Groups(['product_people:read', 'product_people:write'])]
+    #[Groups(['product_people:read', 'product_people:write', 'product:read', 'people:read'])]
     private ?string $supplierSku = null;
 
     #[ORM\Column(type: 'integer', options: ['default' => 1])]
-    #[Groups(['product_people:read', 'product_people:write'])]
+    #[Groups(['product_people:read', 'product_people:write', 'product:read', 'people:read'])]
     private int $priority = 1;
 
     #[ORM\Column(name: 'created_at', type: 'datetime', nullable: true)]
-    #[Groups(['product_people:read'])]
+    #[Groups(['product_people:read', 'product:read', 'people:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
     #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: true)]
-    #[Groups(['product_people:read'])]
+    #[Groups(['product_people:read', 'product:read', 'people:read'])]
     private ?\DateTimeInterface $updatedAt = null;
 
     public function getId(): ?int
@@ -187,5 +192,59 @@ class ProductPeople
     {
         $this->updatedAt = $updatedAt;
         return $this;
+    }
+
+    #[Groups(['product:read'])]
+    #[SerializedName('people')]
+    public function getPeopleSummary(): ?array
+    {
+        if (!$this->people instanceof People) {
+            return null;
+        }
+
+        return [
+            'id' => $this->people->getId(),
+            'name' => $this->people->getName(),
+            'alias' => $this->people->getAlias(),
+            'peopleType' => $this->people->getPeopleType(),
+        ];
+    }
+
+    #[Groups(['people:read'])]
+    #[SerializedName('product')]
+    public function getProductSummary(): ?array
+    {
+        if (!$this->product instanceof Product) {
+            return null;
+        }
+
+        return [
+            'id' => $this->product->getId(),
+            'product' => $this->product->getProduct(),
+            'sku' => $this->product->getSku(),
+            'type' => $this->product->getType(),
+            'price' => $this->product->getPrice(),
+            'productCondition' => $this->product->getProductCondition(),
+            'description' => $this->product->getDescription(),
+            'active' => $this->product->isActive(),
+        ];
+    }
+
+    #[ORM\PrePersist]
+    public function initializeTimestamps(): void
+    {
+        $now = new \DateTimeImmutable('now');
+
+        if (!$this->createdAt instanceof \DateTimeInterface) {
+            $this->createdAt = $now;
+        }
+
+        $this->updatedAt = $now;
+    }
+
+    #[ORM\PreUpdate]
+    public function refreshUpdatedAt(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable('now');
     }
 }
