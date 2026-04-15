@@ -44,6 +44,10 @@ class ProductUnity
     #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
     private $unitType = 'I';
 
+    #[ORM\Column(name: 'description', type: 'string', length: 64, nullable: false)]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
+    private $description = '';
+
     public function getId()
     {
         return $this->id;
@@ -74,6 +78,17 @@ class ProductUnity
     public function setUnitType(string $unitType): self
     {
         $this->unitType = $unitType;
+        return $this;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
         return $this;
     }
 }
