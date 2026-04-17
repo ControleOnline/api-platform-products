@@ -12,6 +12,7 @@ use ControleOnline\Entity\People;
 use ControleOnline\Entity\Spool;
 use ControleOnline\Service\HydratorService;
 use ControleOnline\Service\ProductMenuService;
+use ControleOnline\Service\RequestPayloadService;
 use ControleOnline\Service\ProductService;
 use Exception;
 use Symfony\Component\Security\Http\Attribute\Security;
@@ -22,7 +23,8 @@ class ProductController extends AbstractController
     public function __construct(
         private ProductService $productService,
         private ProductMenuService $productMenuService,
-        private HydratorService $hydratorService
+        private HydratorService $hydratorService,
+        private RequestPayloadService $requestPayloadService
 
     ) {}
 
@@ -44,8 +46,8 @@ class ProductController extends AbstractController
     public function printPurchasingSuggestion(Request $request): JsonResponse
     {
         try {
-            $printData = $this->productService->printPurchasingSuggestionFromPayload(
-                json_decode($request->getContent(), true) ?? []
+            $printData = $this->productService->printPurchasingSuggestionFromContent(
+                $request->getContent()
             );
 
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
@@ -72,8 +74,8 @@ class ProductController extends AbstractController
     public function print(Request $request): JsonResponse
     {
         try {
-            $printData = $this->productService->printProductsInventoryFromPayload(
-                json_decode($request->getContent(), true) ?? []
+            $printData = $this->productService->printProductsInventoryFromContent(
+                $request->getContent()
             );
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
         } catch (Exception $e) {
@@ -86,8 +88,8 @@ class ProductController extends AbstractController
     public function getProductBySku(Request $request): JsonResponse
     {
         try {
-            $product = $this->productService->findProductBySkuPayload(
-                json_decode($request->getContent(), true) ?? []
+            $product = $this->productService->findProductBySkuFromContent(
+                $request->getContent()
             );
 
             return new JsonResponse(
@@ -108,7 +110,9 @@ class ProductController extends AbstractController
     public function downloadMenuCatalog(Request $request): Response
     {
         $companyReference = trim((string) $request->get('company'));
-        $modelId = (int) preg_replace('/\D+/', '', (string) $request->get('model'));
+        $modelId = $this->requestPayloadService->normalizeOptionalNumericId(
+            $request->get('model')
+        );
 
         if ($companyReference === '') {
             return new JsonResponse(
@@ -126,7 +130,7 @@ class ProductController extends AbstractController
         try {
             $pdf = $this->productMenuService->generateCatalogPdf(
                 $company,
-                $modelId > 0 ? $modelId : null
+                $modelId
             );
             $filename = $this->productMenuService->buildCatalogFilename($company);
             $response = new Response($pdf, Response::HTTP_OK, [

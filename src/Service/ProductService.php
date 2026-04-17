@@ -65,6 +65,13 @@ class ProductService
         );
     }
 
+    public function printProductsInventoryFromContent(?string $content): Spool
+    {
+        return $this->printProductsInventoryFromPayload(
+            $this->decodePayload($content)
+        );
+    }
+
     public function productsInventoryPrintData(People $provider, Device $device): Spool
     {
         $products = $this->getProductsInventory($provider);
@@ -115,6 +122,13 @@ class ProductService
         );
     }
 
+    public function printPurchasingSuggestionFromContent(?string $content): Spool
+    {
+        return $this->printPurchasingSuggestionFromPayload(
+            $this->decodePayload($content)
+        );
+    }
+
     public function findProductBySkuPayload(array $payload): Product
     {
         if (!isset($payload['sku'], $payload['people'])) {
@@ -137,6 +151,11 @@ class ProductService
         }
 
         return $product;
+    }
+
+    public function findProductBySkuFromContent(?string $content): Product
+    {
+        return $this->findProductBySkuPayload($this->decodePayload($content));
     }
 
     public function purchasingSuggestionPrintData(People $provider, Device $device): Spool
@@ -258,6 +277,17 @@ class ProductService
         }
 
         return $company;
+    }
+
+    private function decodePayload(?string $content): array
+    {
+        if (!is_string($content) || trim($content) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($content, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     private function requireDeviceReference(mixed $reference): Device
