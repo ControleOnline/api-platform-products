@@ -11,6 +11,7 @@ use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Repository\ModelRepository;
 use ControleOnline\Repository\ProductCategoryRepository;
 use ControleOnline\Repository\ProductGroupRepository;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
@@ -25,6 +26,11 @@ class ProductMenuService
     private const MAIN_PRODUCT_TYPES = ['manufactured', 'custom', 'product', 'service'];
     private const GROUP_COMPONENT_TYPE = 'component';
 
+    /**
+     * @var array<string, string|null>
+     */
+    private array $publicFileUrlCache = [];
+
     public function __construct(
         private ProductCategoryRepository $productCategoryRepository,
         private ProductGroupRepository $productGroupRepository,
@@ -32,18 +38,22 @@ class ProductMenuService
         private ConfigService $configService,
         private PdfService $pdfService,
         private PeopleService $peopleService,
+        private DomainService $domainService,
+        private RequestStack $requestStack,
         private Environment $twig,
     ) {}
 
     public function generateCatalogPdf(People $company, ?int $modelId = null): string
     {
-        $catalog = $this->buildCatalog($company);
         $model = $this->resolveMenuModel($company, $modelId);
+        $templateContent = $this->resolveMenuModelContent($model);
+        $templateFeatures = $this->detectTemplateFeatures($templateContent);
+        $catalog = $this->buildCatalog($company, $templateFeatures);
 
         $catalog['menuModel'] = $model;
         $catalog['menuModelName'] = trim((string) $model->getModel());
 
-        $html = $this->renderMenuModel($model, [
+        $html = $this->renderMenuModel($templateContent, [
             ...$catalog,
             'catalog' => $catalog,
             'service' => $this,
@@ -62,9 +72,10 @@ class ProductMenuService
         return sprintf('cardapio-%s.pdf', $slug !== '' ? $slug : $company->getId());
     }
 
-    public function buildCatalog(People $company): array
+    public function buildCatalog(People $company, array $templateFeatures = []): array
     {
         $this->assertCompanyAccess($company);
+        $templateFeatures = $this->normalizeTemplateFeatures($templateFeatures);
 
         $hiddenCategoryIds = $this->normalizeIds(
             $this->configService->getConfig($company, self::CONFIG_HIDDEN_CATEGORY_IDS, true)
@@ -82,6 +93,11 @@ class ProductMenuService
 
         $categoriesById = [];
         $customProducts = [];
+        $heroImage = null;
+        $includeCategoryImages = $templateFeatures['includeCategoryImages'];
+        $includeProductImages = $templateFeatures['includeProductImages'];
+        $includeHeroImage = $templateFeatures['includeHeroImage'];
+        $includeGroups = $templateFeatures['includeGroups'];
 
         foreach ($productCategories as $productCategory) {
             $category = $productCategory->getCategory();
@@ -89,32 +105,57 @@ class ProductMenuService
             $categoryId = $category->getId();
 
             if (!isset($categoriesById[$categoryId])) {
+                $categoryImage = null;
+
+                if ($includeCategoryImages || ($includeHeroImage && $heroImage === null)) {
+                    $categoryImage = $this->resolveImageUrl($category->getCategoryFiles());
+
+                    if ($includeHeroImage && $heroImage === null && $categoryImage !== null) {
+                        $heroImage = $categoryImage;
+                    }
+                }
+
                 $categoriesById[$categoryId] = [
                     'id' => $categoryId,
                     'name' => trim((string) $category->getName()),
-                    'image' => $this->resolveImageDataUri($category->getCategoryFiles()),
+                    'image' => $includeCategoryImages ? $categoryImage : null,
                     'products' => [],
                 ];
             }
 
-            $categoriesById[$categoryId]['products'][] = $this->buildProductCard($product);
+            $productImage = null;
 
-            if ($product->getType() === 'custom') {
+            if ($includeProductImages || ($includeHeroImage && $heroImage === null)) {
+                $productImage = $this->resolveImageUrl($product->getProductFiles());
+
+                if ($includeHeroImage && $heroImage === null && $productImage !== null) {
+                    $heroImage = $productImage;
+                }
+            }
+
+            $categoriesById[$categoryId]['products'][] = $this->buildProductCard(
+                $product,
+                $includeProductImages ? $productImage : null
+            );
+
+            if ($includeGroups && $product->getType() === 'custom') {
                 $customProducts[$product->getId()] = $product;
             }
         }
 
-        $groupsByProduct = $this->groupProductsByCustomProduct(
-            $this->productGroupRepository->findVisibleComponentGroupsForMenuCatalog(
-                array_values($customProducts),
-                self::GROUP_COMPONENT_TYPE,
-                $hiddenGroupIds
+        $groupsByProduct = $includeGroups
+            ? $this->groupProductsByCustomProduct(
+                $this->productGroupRepository->findVisibleComponentGroupsForMenuCatalog(
+                    array_values($customProducts),
+                    self::GROUP_COMPONENT_TYPE,
+                    $hiddenGroupIds
+                )
             )
-        );
+            : [];
 
         foreach ($categoriesById as &$category) {
             foreach ($category['products'] as &$product) {
-                if ($product['type'] !== 'custom') {
+                if (!$includeGroups || $product['type'] !== 'custom') {
                     continue;
                 }
 
@@ -135,14 +176,13 @@ class ProductMenuService
         }
         unset($category);
 
-        $heroImage = $this->resolveHeroImage($categories);
         $columns = $this->splitCategoriesInColumns($categories);
 
         return [
             'company' => $company,
             'companyName' => $this->resolveCompanyName($company),
             'generatedAt' => new \DateTimeImmutable(),
-            'heroImage' => $heroImage,
+            'heroImage' => $includeHeroImage ? $heroImage : null,
             'columns' => $columns,
             'categoryCount' => count($categories),
             'productCount' => array_sum(array_map(
@@ -195,7 +235,7 @@ class ProductMenuService
         return $model;
     }
 
-    private function renderMenuModel(Model $model, array $data = []): string
+    private function resolveMenuModelContent(Model $model): string
     {
         $file = $model->getFile();
 
@@ -208,6 +248,11 @@ class ProductMenuService
             throw new NotFoundHttpException('O modelo de cardapio selecionado nao possui conteudo.');
         }
 
+        return $content;
+    }
+
+    private function renderMenuModel(string $content, array $data = []): string
+    {
         $template = $this->twig->createTemplate($content);
 
         return $template->render($data);
@@ -267,7 +312,7 @@ class ProductMenuService
     /**
      * @return array<string, mixed>
      */
-    private function buildProductCard(Product $product): array
+    private function buildProductCard(Product $product, ?string $image = null): array
     {
         return [
             'id' => $product->getId(),
@@ -275,7 +320,7 @@ class ProductMenuService
             'name' => trim((string) $product->getProduct()),
             'description' => $this->normalizeDescription($product->getDescription()),
             'priceLabel' => $product->getPrice() > 0 ? $this->formatMoney($product->getPrice()) : null,
-            'image' => $this->resolveImageDataUri($product->getProductFiles()),
+            'image' => $image,
             'groups' => [],
         ];
     }
@@ -353,26 +398,6 @@ class ProductMenuService
         return $columns;
     }
 
-    /**
-     * @param array<int, array<string, mixed>> $categories
-     */
-    private function resolveHeroImage(array $categories): ?string
-    {
-        foreach ($categories as $category) {
-            if (!empty($category['image'])) {
-                return $category['image'];
-            }
-
-            foreach ($category['products'] as $product) {
-                if (!empty($product['image'])) {
-                    return $product['image'];
-                }
-            }
-        }
-
-        return null;
-    }
-
     private function resolveCompanyName(People $company): string
     {
         $alias = trim((string) $company->getAlias());
@@ -389,9 +414,51 @@ class ProductMenuService
     }
 
     /**
+     * @return array{
+     *   includeHeroImage: bool,
+     *   includeCategoryImages: bool,
+     *   includeProductImages: bool,
+     *   includeGroups: bool
+     * }
+     */
+    private function normalizeTemplateFeatures(array $templateFeatures): array
+    {
+        return [
+            'includeHeroImage' => (bool) ($templateFeatures['includeHeroImage'] ?? true),
+            'includeCategoryImages' => (bool) ($templateFeatures['includeCategoryImages'] ?? true),
+            'includeProductImages' => (bool) ($templateFeatures['includeProductImages'] ?? true),
+            'includeGroups' => (bool) ($templateFeatures['includeGroups'] ?? true),
+        ];
+    }
+
+    /**
+     * @return array{
+     *   includeHeroImage: bool,
+     *   includeCategoryImages: bool,
+     *   includeProductImages: bool,
+     *   includeGroups: bool
+     * }
+     */
+    private function detectTemplateFeatures(string $content): array
+    {
+        return [
+            'includeHeroImage' => $this->templateContains($content, 'heroImage'),
+            'includeCategoryImages' => $this->templateContains($content, 'category.image'),
+            'includeProductImages' => $this->templateContains($content, 'product.image'),
+            'includeGroups' => $this->templateContains($content, 'product.groups')
+                || preg_match('/\bgroup\./i', $content) === 1,
+        ];
+    }
+
+    private function templateContains(string $content, string $needle): bool
+    {
+        return str_contains(strtolower($content), strtolower($needle));
+    }
+
+    /**
      * @param iterable<int, mixed> $relations
      */
-    private function resolveImageDataUri(iterable $relations): ?string
+    private function resolveImageUrl(iterable $relations): ?string
     {
         foreach ($relations as $relation) {
             if (!method_exists($relation, 'getFile')) {
@@ -407,28 +474,102 @@ class ProductMenuService
                 continue;
             }
 
-            return sprintf(
-                'data:%s;base64,%s',
-                $this->resolveMimeType($file),
-                $file->getContent()
-            );
+            $cacheKey = (string) $file->getId();
+
+            if (array_key_exists($cacheKey, $this->publicFileUrlCache)) {
+                return $this->publicFileUrlCache[$cacheKey];
+            }
+
+            return $this->publicFileUrlCache[$cacheKey] = $this->buildPublicFileDownloadUrl($file->getId());
         }
 
         return null;
     }
 
-    private function resolveMimeType(File $file): string
+    private function buildPublicFileDownloadUrl(mixed $fileId): ?string
     {
-        $extension = strtolower((string) $file->getExtension());
+        if ($fileId === null || $fileId === '') {
+            return null;
+        }
 
-        return match ($extension) {
-            'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'gif' => 'image/gif',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            default => 'image/' . ($extension !== '' ? $extension : 'png'),
-        };
+        $normalizedFileId = preg_replace('/\D+/', '', (string) $fileId);
+        if ($normalizedFileId === '') {
+            return null;
+        }
+
+        $url = sprintf(
+            '%s/files/%s/download',
+            $this->resolvePublicApiEntrypoint(),
+            $normalizedFileId
+        );
+
+        $appDomain = $this->resolvePublicAppDomain();
+        if ($appDomain === null || $appDomain === '') {
+            return $url;
+        }
+
+        return $url . '?app-domain=' . rawurlencode($appDomain);
+    }
+
+    private function resolvePublicApiEntrypoint(): string
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request !== null) {
+            return rtrim($request->getSchemeAndHttpHost(), '/');
+        }
+
+        $baseUrl = $_ENV['PUBLIC_API_ENTRYPOINT']
+            ?? $_ENV['API_ENTRYPOINT']
+            ?? $_ENV['API_BASE_URL']
+            ?? $_SERVER['PUBLIC_API_ENTRYPOINT']
+            ?? $_SERVER['API_ENTRYPOINT']
+            ?? $_SERVER['API_BASE_URL']
+            ?? getenv('PUBLIC_API_ENTRYPOINT')
+            ?? getenv('API_ENTRYPOINT')
+            ?? getenv('API_BASE_URL')
+            ?: 'https://api.controleonline.com';
+
+        $baseUrl = trim((string) $baseUrl);
+        if ($baseUrl === '') {
+            $baseUrl = 'https://api.controleonline.com';
+        }
+
+        if (!preg_match('#^https?://#i', $baseUrl)) {
+            $baseUrl = 'https://' . ltrim($baseUrl, '/');
+        }
+
+        return rtrim($baseUrl, '/');
+    }
+
+    private function resolvePublicAppDomain(): ?string
+    {
+        try {
+            $domain = trim((string) $this->domainService->getDomain());
+        } catch (\Throwable) {
+            $domain = trim((string) (
+                $_ENV['PUBLIC_APP_DOMAIN']
+                ?? $_ENV['APP_DOMAIN']
+                ?? $_ENV['ADMIN_APP_DOMAIN']
+                ?? $_SERVER['PUBLIC_APP_DOMAIN']
+                ?? $_SERVER['APP_DOMAIN']
+                ?? $_SERVER['ADMIN_APP_DOMAIN']
+                ?? getenv('PUBLIC_APP_DOMAIN')
+                ?? getenv('APP_DOMAIN')
+                ?? getenv('ADMIN_APP_DOMAIN')
+                ?? ''
+            ));
+        }
+
+        if ($domain === '') {
+            return null;
+        }
+
+        $host = parse_url($domain, PHP_URL_HOST);
+        if (is_string($host) && $host !== '') {
+            return $host;
+        }
+
+        return str_contains($domain, '/') ? null : $domain;
     }
 
     /**
