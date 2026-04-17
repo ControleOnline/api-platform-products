@@ -18,6 +18,7 @@ use Twig\Environment;
 
 class ProductMenuService
 {
+    public const CONFIG_MODEL = 'menu-catalog-model';
     public const CONFIG_HIDDEN_CATEGORY_IDS = 'menu-catalog-hidden-category-ids';
     public const CONFIG_HIDDEN_GROUP_IDS = 'menu-catalog-hidden-group-ids';
 
@@ -200,39 +201,63 @@ class ProductMenuService
     {
         $currentPeople = $this->peopleService->getMyPeople();
 
-        if (!$currentPeople instanceof People) {
-            throw new AccessDeniedHttpException('Usuario nao autenticado.');
+        if ($currentPeople instanceof People) {
+            if ($currentPeople->getId() === $company->getId()) {
+                return;
+            }
+
+            $companyIds = array_map(
+                fn(People $myCompany): int => $myCompany->getId(),
+                $this->peopleService->getMyCompanies()
+            );
+
+            if (in_array($company->getId(), $companyIds, true)) {
+                return;
+            }
         }
 
-        if ($currentPeople->getId() === $company->getId()) {
-            return;
+        try {
+            $domainCompany = $this->domainService->getPeopleDomain()->getPeople();
+        } catch (\Throwable) {
+            throw new AccessDeniedHttpException('Empresa nao autorizada.');
         }
 
-        $companyIds = array_map(
-            fn(People $myCompany): int => $myCompany->getId(),
-            $this->peopleService->getMyCompanies()
-        );
-
-        if (!in_array($company->getId(), $companyIds, true)) {
+        if (!$domainCompany instanceof People || $domainCompany->getId() !== $company->getId()) {
             throw new AccessDeniedHttpException('Empresa nao autorizada.');
         }
     }
 
     private function resolveMenuModel(People $company, ?int $modelId = null): Model
     {
+        $resolvedModelId = $modelId ?? $this->resolveConfiguredMenuModelId($company);
+
+        if ($resolvedModelId === null) {
+            throw new NotFoundHttpException(
+                'Nenhum modelo de cardapio foi configurado nas configuracoes da empresa.'
+            );
+        }
+
         $model = $this->modelRepository->findCompanyContextModel(
             $company,
             self::MODEL_CONTEXT,
-            $modelId
+            $resolvedModelId
         );
 
         if (!$model instanceof Model) {
             throw new NotFoundHttpException(
-                'Nenhum modelo de cardapio com contexto menu foi encontrado para a empresa.'
+                'O modelo de cardapio configurado para a empresa nao foi encontrado.'
             );
         }
 
         return $model;
+    }
+
+    private function resolveConfiguredMenuModelId(People $company): ?int
+    {
+        $configuredModel = $this->configService->getConfig($company, self::CONFIG_MODEL);
+        $normalizedModelId = (int) preg_replace('/\D+/', '', (string) $configuredModel);
+
+        return $normalizedModelId > 0 ? $normalizedModelId : null;
     }
 
     private function resolveMenuModelContent(Model $model): string

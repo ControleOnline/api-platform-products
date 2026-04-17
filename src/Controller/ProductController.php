@@ -106,7 +106,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/menu/download', name: 'product_menu_download', methods: ['GET'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('PUBLIC_ACCESS')")]
     public function downloadMenuCatalog(Request $request): Response
     {
         $companyReference = trim((string) $request->get('company'));
