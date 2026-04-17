@@ -52,6 +52,16 @@ class ProductMenuService
         return $this->pdfService->convertHtmlToPdf($html);
     }
 
+    public function buildCatalogFilename(People $company): string
+    {
+        $baseName = trim((string) ($company->getAlias() ?: $company->getName()));
+        $slug = strtolower((string) iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $baseName));
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug ?? '');
+        $slug = trim((string) $slug, '-');
+
+        return sprintf('cardapio-%s.pdf', $slug !== '' ? $slug : $company->getId());
+    }
+
     public function buildCatalog(People $company): array
     {
         $this->assertCompanyAccess($company);

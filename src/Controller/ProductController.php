@@ -2,14 +2,12 @@
 
 namespace ControleOnline\Controller;
 
-use ControleOnline\Entity\Device;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
-use Doctrine\ORM\EntityManagerInterface;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Spool;
 use ControleOnline\Service\HydratorService;
@@ -22,7 +20,6 @@ use ControleOnline\Entity\Product;
 class ProductController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $manager,
         private ProductService $productService,
         private ProductMenuService $productMenuService,
         private HydratorService $hydratorService
@@ -33,7 +30,11 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function getPurchasingSuggestion(Request $request): JsonResponse
     {
-        $company =  $this->manager->getRepository(People::class)->find($request->get('company'));
+        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
         $data = $this->productService->getPurchasingSuggestion($company);
         return new JsonResponse($data);
     }
@@ -43,12 +44,9 @@ class ProductController extends AbstractController
     public function printPurchasingSuggestion(Request $request): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true);
-            $device = $this->manager->getRepository(Device::class)->findOneBy([
-                'device' => $data['device']
-            ]);
-            $company = $this->manager->getRepository(People::class)->find($data['people']);
-            $printData = $this->productService->purchasingSuggestionPrintData($company, $device);
+            $printData = $this->productService->printPurchasingSuggestionFromPayload(
+                json_decode($request->getContent(), true) ?? []
+            );
 
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
         } catch (Exception $e) {
@@ -60,7 +58,11 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function getProductsInventory(Request $request): JsonResponse
     {
-        $company =  $this->manager->getRepository(People::class)->find($request->get('company'));
+        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
         $data = $this->productService->getProductsInventory($company);
         return new JsonResponse($data);
     }
@@ -70,13 +72,9 @@ class ProductController extends AbstractController
     public function print(Request $request): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true);
-            $device = $this->manager->getRepository(Device::class)->findOneBy([
-                'device' => $data['device']
-            ]);
-
-            $company = $this->manager->getRepository(People::class)->find($data['people']);
-            $printData = $this->productService->productsInventoryPrintData($company, $device);
+            $printData = $this->productService->printProductsInventoryFromPayload(
+                json_decode($request->getContent(), true) ?? []
+            );
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
         } catch (Exception $e) {
             return new JsonResponse($this->hydratorService->error($e));
@@ -88,31 +86,18 @@ class ProductController extends AbstractController
     public function getProductBySku(Request $request): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true);
-
-            if (!isset($data['sku'], $data['people'])) {
-                return new JsonResponse(['error' => 'Parâmetros obrigatórios: sku e people'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $sku = (int) ltrim($data['sku'], '0');
-            $company = $this->manager->getRepository(People::class)->find($data['people']);
-
-            if (!$company) {
-                return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
-            }
-
-            $product = $this->manager
-                ->getRepository(Product::class)
-                ->findProductBySkuAsInteger($sku, $company);
-
-            if (!$product) {
-                return new JsonResponse(['error' => 'Produto não encontrado'], Response::HTTP_NOT_FOUND);
-            }
+            $product = $this->productService->findProductBySkuPayload(
+                json_decode($request->getContent(), true) ?? []
+            );
 
             return new JsonResponse(
                 $this->hydratorService->item(Product::class, $product->getId(), 'product:read'),
                 Response::HTTP_OK
             );
+        } catch (\Symfony\Component\HttpKernel\Exception\BadRequestHttpException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -122,17 +107,17 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
     public function downloadMenuCatalog(Request $request): Response
     {
-        $companyId = (int) preg_replace('/\D+/', '', (string) $request->get('company'));
+        $companyReference = trim((string) $request->get('company'));
         $modelId = (int) preg_replace('/\D+/', '', (string) $request->get('model'));
 
-        if ($companyId <= 0) {
+        if ($companyReference === '') {
             return new JsonResponse(
                 ['error' => 'Parametro obrigatorio: company'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
-        $company = $this->manager->getRepository(People::class)->find($companyId);
+        $company = $this->productService->resolveCompanyReference($companyReference);
 
         if (!$company instanceof People) {
             return new JsonResponse(['error' => 'Empresa nao encontrada'], Response::HTTP_NOT_FOUND);
@@ -143,7 +128,7 @@ class ProductController extends AbstractController
                 $company,
                 $modelId > 0 ? $modelId : null
             );
-            $filename = $this->buildCatalogFilename($company);
+            $filename = $this->productMenuService->buildCatalogFilename($company);
             $response = new Response($pdf, Response::HTTP_OK, [
                 'Content-Type' => 'application/pdf',
             ]);
@@ -168,15 +153,5 @@ class ProductController extends AbstractController
     public function teste(): JsonResponse
     {
         return new JsonResponse(['message' => 'rota funcionando']);
-    }
-
-    private function buildCatalogFilename(People $company): string
-    {
-        $baseName = trim((string) ($company->getAlias() ?: $company->getName()));
-        $slug = strtolower((string) iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $baseName));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug ?? '');
-        $slug = trim((string) $slug, '-');
-
-        return sprintf('cardapio-%s.pdf', $slug !== '' ? $slug : $company->getId());
     }
 }

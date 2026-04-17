@@ -15,6 +15,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
 as Security;
 use Doctrine\ORM\QueryBuilder;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductService
 {
@@ -39,6 +41,28 @@ class ProductService
     public function getProductsInventory(People $company): array
     {
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
+    }
+
+    public function resolveCompanyReference(mixed $reference): ?People
+    {
+        return $this->manager->getRepository(People::class)->find(
+            $this->normalizeReferenceId($reference)
+        );
+    }
+
+    public function resolveDeviceReference(mixed $reference): ?Device
+    {
+        return $this->manager->getRepository(Device::class)->findOneBy([
+            'device' => trim((string) $reference),
+        ]);
+    }
+
+    public function printProductsInventoryFromPayload(array $payload): Spool
+    {
+        return $this->productsInventoryPrintData(
+            $this->requireCompanyReference($payload['people'] ?? null),
+            $this->requireDeviceReference($payload['device'] ?? null)
+        );
     }
 
     public function productsInventoryPrintData(People $provider, Device $device): Spool
@@ -81,6 +105,38 @@ class ProductService
     public function getPurchasingSuggestion(People $company)
     {
         return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
+    }
+
+    public function printPurchasingSuggestionFromPayload(array $payload): Spool
+    {
+        return $this->purchasingSuggestionPrintData(
+            $this->requireCompanyReference($payload['people'] ?? null),
+            $this->requireDeviceReference($payload['device'] ?? null)
+        );
+    }
+
+    public function findProductBySkuPayload(array $payload): Product
+    {
+        if (!isset($payload['sku'], $payload['people'])) {
+            throw new BadRequestHttpException('Parâmetros obrigatórios: sku e people');
+        }
+
+        $sku = (int) ltrim((string) $payload['sku'], '0');
+        $company = $this->resolveCompanyReference($payload['people']);
+
+        if (!$company instanceof People) {
+            throw new NotFoundHttpException('Empresa não encontrada');
+        }
+
+        $product = $this->manager
+            ->getRepository(Product::class)
+            ->findProductBySkuAsInteger($sku, $company);
+
+        if (!$product instanceof Product) {
+            throw new NotFoundHttpException('Produto não encontrado');
+        }
+
+        return $product;
     }
 
     public function purchasingSuggestionPrintData(People $provider, Device $device): Spool
@@ -192,6 +248,31 @@ class ProductService
         }
 
         return $normalized;
+    }
+
+    private function requireCompanyReference(mixed $reference): People
+    {
+        $company = $this->resolveCompanyReference($reference);
+        if (!$company instanceof People) {
+            throw new \InvalidArgumentException('Empresa não encontrada');
+        }
+
+        return $company;
+    }
+
+    private function requireDeviceReference(mixed $reference): Device
+    {
+        $device = $this->resolveDeviceReference($reference);
+        if (!$device instanceof Device) {
+            throw new \InvalidArgumentException('Dispositivo não encontrado');
+        }
+
+        return $device;
+    }
+
+    private function normalizeReferenceId(mixed $reference): int
+    {
+        return (int) preg_replace('/\D+/', '', (string) $reference);
     }
 
     private function validateImportRow(array $data): void
