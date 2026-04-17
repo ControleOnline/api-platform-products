@@ -11,7 +11,6 @@ use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Repository\ModelRepository;
 use ControleOnline\Repository\ProductCategoryRepository;
 use ControleOnline\Repository\ProductGroupRepository;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
@@ -26,11 +25,18 @@ class ProductMenuService
     private const MODEL_CONTEXT = 'menu';
     private const MAIN_PRODUCT_TYPES = ['manufactured', 'custom', 'product', 'service'];
     private const GROUP_COMPONENT_TYPE = 'component';
+    private const IMAGE_VARIANTS = [
+        'hero' => ['maxWidth' => 1400, 'maxHeight' => 900, 'maxBytes' => 800000, 'quality' => 82],
+        'category' => ['maxWidth' => 900, 'maxHeight' => 520, 'maxBytes' => 500000, 'quality' => 80],
+        'product' => ['maxWidth' => 220, 'maxHeight' => 220, 'maxBytes' => 180000, 'quality' => 76],
+        'default' => ['maxWidth' => 900, 'maxHeight' => 900, 'maxBytes' => 500000, 'quality' => 80],
+    ];
 
     /**
      * @var array<string, string|null>
      */
-    private array $publicFileUrlCache = [];
+    private array $imageSourceCache = [];
+    private ?string $assetDirectory = null;
 
     public function __construct(
         private ProductCategoryRepository $productCategoryRepository,
@@ -40,27 +46,36 @@ class ProductMenuService
         private PdfService $pdfService,
         private PeopleService $peopleService,
         private DomainService $domainService,
-        private RequestStack $requestStack,
         private Environment $twig,
     ) {}
 
     public function generateCatalogPdf(People $company, ?int $modelId = null): string
     {
-        $model = $this->resolveMenuModel($company, $modelId);
-        $templateContent = $this->resolveMenuModelContent($model);
-        $templateFeatures = $this->detectTemplateFeatures($templateContent);
-        $catalog = $this->buildCatalog($company, $templateFeatures);
+        $this->resetPreparedAssets();
 
-        $catalog['menuModel'] = $model;
-        $catalog['menuModelName'] = trim((string) $model->getModel());
+        try {
+            $model = $this->resolveMenuModel($company, $modelId);
+            $templateContent = $this->resolveMenuModelContent($model);
+            $templateFeatures = $this->detectTemplateFeatures($templateContent);
+            $catalog = $this->buildCatalog($company, $templateFeatures);
 
-        $html = $this->renderMenuModel($templateContent, [
-            ...$catalog,
-            'catalog' => $catalog,
-            'service' => $this,
-        ]);
+            $catalog['menuModel'] = $model;
+            $catalog['menuModelName'] = trim((string) $model->getModel());
 
-        return $this->pdfService->convertHtmlToPdf($html);
+            $html = $this->renderMenuModel($templateContent, [
+                ...$catalog,
+                'catalog' => $catalog,
+                'service' => $this,
+            ]);
+
+            return $this->pdfService->convertHtmlToPdf(
+                $html,
+                false,
+                $this->assetDirectory !== null ? [$this->assetDirectory] : []
+            );
+        } finally {
+            $this->cleanupPreparedAssets();
+        }
     }
 
     public function buildCatalogFilename(People $company): string
@@ -108,12 +123,13 @@ class ProductMenuService
             if (!isset($categoriesById[$categoryId])) {
                 $categoryImage = null;
 
-                if ($includeCategoryImages || ($includeHeroImage && $heroImage === null)) {
-                    $categoryImage = $this->resolveImageUrl($category->getCategoryFiles());
+                if ($includeCategoryImages) {
+                    $categoryImage = $this->resolveImageSource($category->getCategoryFiles(), 'category');
+                }
 
-                    if ($includeHeroImage && $heroImage === null && $categoryImage !== null) {
-                        $heroImage = $categoryImage;
-                    }
+                if ($includeHeroImage && $heroImage === null) {
+                    $heroImage = $this->resolveImageSource($category->getCategoryFiles(), 'hero')
+                        ?? $categoryImage;
                 }
 
                 $categoriesById[$categoryId] = [
@@ -126,12 +142,13 @@ class ProductMenuService
 
             $productImage = null;
 
-            if ($includeProductImages || ($includeHeroImage && $heroImage === null)) {
-                $productImage = $this->resolveImageUrl($product->getProductFiles());
+            if ($includeProductImages) {
+                $productImage = $this->resolveImageSource($product->getProductFiles(), 'product');
+            }
 
-                if ($includeHeroImage && $heroImage === null && $productImage !== null) {
-                    $heroImage = $productImage;
-                }
+            if ($includeHeroImage && $heroImage === null) {
+                $heroImage = $this->resolveImageSource($product->getProductFiles(), 'hero')
+                    ?? $productImage;
             }
 
             $categoriesById[$categoryId]['products'][] = $this->buildProductCard(
@@ -483,7 +500,7 @@ class ProductMenuService
     /**
      * @param iterable<int, mixed> $relations
      */
-    private function resolveImageUrl(iterable $relations): ?string
+    private function resolveImageSource(iterable $relations, string $variant = 'default'): ?string
     {
         foreach ($relations as $relation) {
             if (!method_exists($relation, 'getFile')) {
@@ -499,102 +516,214 @@ class ProductMenuService
                 continue;
             }
 
-            $cacheKey = (string) $file->getId();
+            $cacheKey = sprintf('%s:%s', $file->getId(), $variant);
 
-            if (array_key_exists($cacheKey, $this->publicFileUrlCache)) {
-                return $this->publicFileUrlCache[$cacheKey];
+            if (array_key_exists($cacheKey, $this->imageSourceCache)) {
+                return $this->imageSourceCache[$cacheKey];
             }
 
-            return $this->publicFileUrlCache[$cacheKey] = $this->buildPublicFileDownloadUrl($file->getId());
+            return $this->imageSourceCache[$cacheKey] = $this->buildImageAssetSource($file, $variant);
         }
 
         return null;
     }
 
-    private function buildPublicFileDownloadUrl(mixed $fileId): ?string
+    private function buildImageAssetSource(File $file, string $variant): ?string
     {
-        if ($fileId === null || $fileId === '') {
+        $content = $file->getContent(true);
+        if ($content === '') {
             return null;
         }
 
-        $normalizedFileId = preg_replace('/\D+/', '', (string) $fileId);
-        if ($normalizedFileId === '') {
+        $extension = strtolower(trim((string) $file->getExtension()));
+        if ($extension === '') {
             return null;
         }
 
-        $url = sprintf(
-            '%s/files/%s/download',
-            $this->resolvePublicApiEntrypoint(),
-            $normalizedFileId
+        if ($extension === 'svg') {
+            $path = $this->writeTemporaryAsset($content, 'svg');
+
+            return $path !== null ? 'file://' . $path : null;
+        }
+
+        $variantConfig = self::IMAGE_VARIANTS[$variant] ?? self::IMAGE_VARIANTS['default'];
+        $imageInfo = function_exists('getimagesizefromstring') ? @getimagesizefromstring($content) : false;
+        if (
+            is_array($imageInfo)
+            && isset($imageInfo[0], $imageInfo[1])
+            && (int) $imageInfo[0] > 0
+            && (int) $imageInfo[1] > 0
+            && (int) $imageInfo[0] <= $variantConfig['maxWidth']
+            && (int) $imageInfo[1] <= $variantConfig['maxHeight']
+            && strlen($content) <= $variantConfig['maxBytes']
+        ) {
+            $path = $this->writeTemporaryAsset($content, $extension);
+
+            return $path !== null ? 'file://' . $path : null;
+        }
+
+        if (!function_exists('imagecreatefromstring')) {
+            $path = $this->writeTemporaryAsset($content, $extension);
+
+            return $path !== null ? 'file://' . $path : null;
+        }
+
+        $image = @imagecreatefromstring($content);
+        if (!$image instanceof \GdImage) {
+            $path = $this->writeTemporaryAsset($content, $extension);
+
+            return $path !== null ? 'file://' . $path : null;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        if ($width <= 0 || $height <= 0) {
+            imagedestroy($image);
+
+            $path = $this->writeTemporaryAsset($content, $extension);
+
+            return $path !== null ? 'file://' . $path : null;
+        }
+
+        $scale = min(
+            1,
+            $variantConfig['maxWidth'] / max(1, $width),
+            $variantConfig['maxHeight'] / max(1, $height)
         );
+        $targetWidth = (int) max(1, floor($width * $scale));
+        $targetHeight = (int) max(1, floor($height * $scale));
 
-        $appDomain = $this->resolvePublicAppDomain();
-        if ($appDomain === null || $appDomain === '') {
-            return $url;
-        }
+        $normalized = imagecreatetruecolor($targetWidth, $targetHeight);
+        imagealphablending($normalized, true);
+        imagesavealpha($normalized, false);
+        $white = imagecolorallocate($normalized, 255, 255, 255);
+        imagefilledrectangle($normalized, 0, 0, $targetWidth, $targetHeight, $white);
+        imagecopyresampled($normalized, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+        imagedestroy($image);
 
-        return $url . '?app-domain=' . rawurlencode($appDomain);
-    }
-
-    private function resolvePublicApiEntrypoint(): string
-    {
-        $request = $this->requestStack->getCurrentRequest();
-        if ($request !== null) {
-            return rtrim($request->getSchemeAndHttpHost(), '/');
-        }
-
-        $baseUrl = $_ENV['PUBLIC_API_ENTRYPOINT']
-            ?? $_ENV['API_ENTRYPOINT']
-            ?? $_ENV['API_BASE_URL']
-            ?? $_SERVER['PUBLIC_API_ENTRYPOINT']
-            ?? $_SERVER['API_ENTRYPOINT']
-            ?? $_SERVER['API_BASE_URL']
-            ?? getenv('PUBLIC_API_ENTRYPOINT')
-            ?? getenv('API_ENTRYPOINT')
-            ?? getenv('API_BASE_URL')
-            ?: 'https://api.controleonline.com';
-
-        $baseUrl = trim((string) $baseUrl);
-        if ($baseUrl === '') {
-            $baseUrl = 'https://api.controleonline.com';
-        }
-
-        if (!preg_match('#^https?://#i', $baseUrl)) {
-            $baseUrl = 'https://' . ltrim($baseUrl, '/');
-        }
-
-        return rtrim($baseUrl, '/');
-    }
-
-    private function resolvePublicAppDomain(): ?string
-    {
-        try {
-            $domain = trim((string) $this->domainService->getDomain());
-        } catch (\Throwable) {
-            $domain = trim((string) (
-                $_ENV['PUBLIC_APP_DOMAIN']
-                ?? $_ENV['APP_DOMAIN']
-                ?? $_ENV['ADMIN_APP_DOMAIN']
-                ?? $_SERVER['PUBLIC_APP_DOMAIN']
-                ?? $_SERVER['APP_DOMAIN']
-                ?? $_SERVER['ADMIN_APP_DOMAIN']
-                ?? getenv('PUBLIC_APP_DOMAIN')
-                ?? getenv('APP_DOMAIN')
-                ?? getenv('ADMIN_APP_DOMAIN')
-                ?? ''
-            ));
-        }
-
-        if ($domain === '') {
+        $path = $this->createTemporaryAssetPath('jpg');
+        if ($path === null) {
+            imagedestroy($normalized);
             return null;
         }
 
-        $host = parse_url($domain, PHP_URL_HOST);
-        if (is_string($host) && $host !== '') {
-            return $host;
+        $quality = (int) $variantConfig['quality'];
+        $saved = false;
+
+        while ($quality >= 58) {
+            $saved = imagejpeg($normalized, $path, $quality);
+            if (
+                $saved
+                && is_file($path)
+                && filesize($path) !== false
+                && filesize($path) <= $variantConfig['maxBytes']
+            ) {
+                break;
+            }
+
+            $quality -= 6;
         }
 
-        return str_contains($domain, '/') ? null : $domain;
+        imagedestroy($normalized);
+
+        if (!$saved || !is_file($path)) {
+            @unlink($path);
+
+            return null;
+        }
+
+        if (filesize($path) !== false && filesize($path) > $variantConfig['maxBytes']) {
+            @unlink($path);
+
+            return null;
+        }
+
+        return 'file://' . $path;
+    }
+
+    private function prepareAssetDirectory(): ?string
+    {
+        if ($this->assetDirectory !== null) {
+            return $this->assetDirectory;
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'menu_pdf_');
+        if ($path === false) {
+            return null;
+        }
+
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        if (!@mkdir($path, 0700, true) && !is_dir($path)) {
+            return null;
+        }
+
+        $this->assetDirectory = $path;
+
+        return $this->assetDirectory;
+    }
+
+    private function createTemporaryAssetPath(string $extension): ?string
+    {
+        $directory = $this->prepareAssetDirectory();
+        if ($directory === null) {
+            return null;
+        }
+
+        return sprintf(
+            '%s/%s.%s',
+            rtrim($directory, '/'),
+            bin2hex(random_bytes(12)),
+            ltrim(strtolower($extension), '.')
+        );
+    }
+
+    private function writeTemporaryAsset(string $content, string $extension): ?string
+    {
+        $path = $this->createTemporaryAssetPath($extension);
+        if ($path === null) {
+            return null;
+        }
+
+        $bytes = @file_put_contents($path, $content);
+        if ($bytes === false) {
+            @unlink($path);
+
+            return null;
+        }
+
+        return $path;
+    }
+
+    private function resetPreparedAssets(): void
+    {
+        $this->imageSourceCache = [];
+        $this->assetDirectory = null;
+    }
+
+    private function cleanupPreparedAssets(): void
+    {
+        $assetDirectory = $this->assetDirectory;
+
+        $this->imageSourceCache = [];
+        $this->assetDirectory = null;
+
+        if ($assetDirectory === null || !is_dir($assetDirectory)) {
+            return;
+        }
+
+        $files = glob(rtrim($assetDirectory, '/') . '/*');
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    @unlink($file);
+                }
+            }
+        }
+
+        @rmdir($assetDirectory);
     }
 
     /**
