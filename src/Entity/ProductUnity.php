@@ -33,19 +33,19 @@ class ProductUnity
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read', 'order:read', 'order_details:read', 'order_product:read', 'order_product_queue:read', 'orders-queue:read'])]
     private $id;
 
     #[ORM\Column(name: 'product_unit', type: 'string', length: 3, nullable: false)]
-    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read', 'order:read', 'order_details:read', 'order_product:read', 'order_product_queue:read', 'orders-queue:read'])]
     private $productUnit;
 
     #[ORM\Column(name: 'unit_type', type: 'string', length: 0, nullable: false, options: ['default' => "'I'", 'comment' => 'Integer, Fractioned'])]
-    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read', 'order:read', 'order_details:read', 'order_product:read', 'order_product_queue:read', 'orders-queue:read'])]
     private $unitType = 'I';
 
     #[ORM\Column(name: 'description', type: 'string', length: 64, nullable: false)]
-    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read'])]
+    #[Groups(['product:read', 'product_group_product:read', 'product_group:read', 'product_unity:read', 'order:read', 'order_details:read', 'order_product:read', 'order_product_queue:read', 'orders-queue:read'])]
     private $description = '';
 
     public function getId()
