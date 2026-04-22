@@ -83,7 +83,7 @@ class ProductGroup
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact', 'parentProduct.company' => 'exact'])]
     #[ORM\JoinColumn(nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[Groups(['product_group:read', 'orders-queue:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'orders-queue:read', 'product_group:write'])]
     private $parentProduct;
 
     public function __construct()
