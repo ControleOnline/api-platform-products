@@ -8,3 +8,4 @@
 ## Limites
 - Regras de venda e pedido pertencem a `orders`.
 - Regras de fila operacional de preparo pertencem a `queue`.
+
