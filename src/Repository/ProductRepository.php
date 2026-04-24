@@ -70,9 +70,9 @@ class ProductRepository extends ServiceEntityRepository
                 'p.product AS product_name',
                 'p.description AS description',
                 'p.type AS type',
-                'SUM(pi.available + pi.ordered + pi.transit - pi.sales) AS stock',
+                'SUM(pi.available + pi.purchases + pi.transit - pi.sales) AS stock',
                 'SUM(pi.minimum) AS minimum',
-                'CASE WHEN SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 < 0 THEN 0 ELSE SUM(pi.available + pi.ordered + pi.transit - pi.minimum - pi.sales) * -1 END AS needed',
+                'CASE WHEN SUM(pi.available + pi.purchases + pi.transit - pi.minimum - pi.sales) * -1 < 0 THEN 0 ELSE SUM(pi.available + pi.purchases + pi.transit - pi.minimum - pi.sales) * -1 END AS needed',
                 'pu.productUnit AS unity'
             ])
             ->join('p.company', 'pe')
