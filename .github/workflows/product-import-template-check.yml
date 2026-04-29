@@ -1,0 +1,18 @@
+name: Product Import Template Check
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - task-76
+
+jobs:
+  verify-template-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify product import template contract
+        run: node tools/verify-product-import-template.cjs
