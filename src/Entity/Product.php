@@ -24,9 +24,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'PUBLIC_ACCESS\')'),
-        new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['product:write']]),
-        new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
-        new Post(securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'),
+        new Put(security: 'is_granted(\'ROLE_HUMAN\')', denormalizationContext: ['groups' => ['product:write']]),
+        new Delete(security: 'is_granted(\'ROLE_HUMAN\')'),
+        new Post(securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\')'),
         new GetCollection(security: 'is_granted(\'PUBLIC_ACCESS\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],

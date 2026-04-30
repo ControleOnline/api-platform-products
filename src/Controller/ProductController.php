@@ -29,7 +29,7 @@ class ProductController extends AbstractController
     ) {}
 
     #[Route('/products/purchasing-suggestion', name: 'purchasing_suggestion', methods: ['GET'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('ROLE_HUMAN')")]
     public function getPurchasingSuggestion(Request $request): JsonResponse
     {
         $company = $this->productService->resolveCompanyReference($request->get('company'));
@@ -42,7 +42,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/purchasing-suggestion/print', name: 'purchasing_suggestion_print', methods: ['POST'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('ROLE_HUMAN')")]
     public function printPurchasingSuggestion(Request $request): JsonResponse
     {
         try {
@@ -57,7 +57,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/inventory', name: 'products_inventory', methods: ['GET'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('ROLE_HUMAN')")]
     public function getProductsInventory(Request $request): JsonResponse
     {
         $company = $this->productService->resolveCompanyReference($request->get('company'));
@@ -70,7 +70,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/inventory/print', name: 'products_inventory_print', methods: ['POST'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('ROLE_HUMAN')")]
     public function print(Request $request): JsonResponse
     {
         try {
@@ -84,7 +84,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/sku', name: 'product_by_sku', methods: ['POST'])]
-    #[Security("is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')")]
+    #[Security("is_granted('ROLE_HUMAN')")]
     public function getProductBySku(Request $request): JsonResponse
     {
         try {

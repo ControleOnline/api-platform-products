@@ -27,12 +27,12 @@ use ControleOnline\Repository\InventoryRepository;
     operations: [
         new GetCollection(security: "is_granted('PUBLIC_ACCESS')"),
         new Get(security: "is_granted('PUBLIC_ACCESS')"),
-        new Post(securityPostDenormalize: "is_granted('ROLE_CLIENT')"),
+        new Post(securityPostDenormalize: "is_granted('ROLE_HUMAN')"),
         new Put(
-            security: "is_granted('ROLE_CLIENT')",
+            security: "is_granted('ROLE_HUMAN')",
             denormalizationContext: ['groups' => ['inventory:write']]
         ),
-        new Delete(security: "is_granted('ROLE_CLIENT')")
+        new Delete(security: "is_granted('ROLE_HUMAN')")
     ]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['inventory', 'type'])]

@@ -20,9 +20,9 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
     operations: [
         new Get(uriTemplate: '/product_people/{id}', security: 'is_granted(\'PUBLIC_ACCESS\')'),
         new GetCollection(uriTemplate: '/product_people', security: 'is_granted(\'PUBLIC_ACCESS\')'),
-        new Post(uriTemplate: '/product_people', security: 'is_granted(\'ROLE_CLIENT\')'),
-        new Put(uriTemplate: '/product_people/{id}', security: 'is_granted(\'ROLE_CLIENT\')'),
-        new Delete(uriTemplate: '/product_people/{id}', security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Post(uriTemplate: '/product_people', security: 'is_granted(\'ROLE_HUMAN\')'),
+        new Put(uriTemplate: '/product_people/{id}', security: 'is_granted(\'ROLE_HUMAN\')'),
+        new Delete(uriTemplate: '/product_people/{id}', security: 'is_granted(\'ROLE_HUMAN\')'),
     ],
     normalizationContext: ['groups' => ['product_people:read']],
     denormalizationContext: ['groups' => ['product_people:write']]

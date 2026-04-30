@@ -19,12 +19,12 @@ use Doctrine\ORM\Mapping as ORM;
     operations: [
         new Get(security: 'is_granted(\'PUBLIC_ACCESS\')'),
         new Put(
-            security: 'is_granted(\'ROLE_CLIENT\')',
+            security: 'is_granted(\'ROLE_HUMAN\')',
             denormalizationContext: ['groups' => ['product_inventory:write']]
         ),
-        new Delete(security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Delete(security: 'is_granted(\'ROLE_HUMAN\')'),
         new Post(
-            securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')',
+            securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\')',
             denormalizationContext: ['groups' => ['product_inventory:write']]
         ),
         new GetCollection(security: 'is_granted(\'PUBLIC_ACCESS\')'),
