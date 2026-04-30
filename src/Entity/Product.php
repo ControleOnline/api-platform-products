@@ -42,8 +42,24 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'default_in_inventory_id', columns: ['default_in_inventory_id'])]
 #[ORM\UniqueConstraint(name: 'company_id', columns: ['company_id', 'sku'])]
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Product
 {
+    private const SERVICE_TYPE = 'service';
+    private const SERVICE_BILLING_PATTERNS = [
+        '/\bmes\b|mens|month/',
+        '/\bsem\b|seman|week/',
+        '/quinzen/',
+        '/bimens|bimes|bimestre/',
+        '/trimes|quarter/',
+        '/semes/',
+        '/anual|year/',
+        '/\bhr\b|hora|hour/',
+        '/\bdia\b|diar|day/',
+        '/unitar|execucao unica|execucao|avuls|\bun\b|\bund\b|unic[ao]?/',
+        '/atend|sess/',
+    ];
+
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
@@ -339,5 +355,59 @@ class Product
     public function getExtraData()
     {
         return $this->extraData;
+    }
+
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function validateServiceUnitCompatibility(): void
+    {
+        if ($this->type !== self::SERVICE_TYPE || !$this->productUnit instanceof ProductUnity) {
+            return;
+        }
+
+        if ($this->isCompatibleServiceUnit($this->productUnit)) {
+            return;
+        }
+
+        $label = $this->productUnit->getDescription() ?: $this->productUnit->getProductUnit();
+
+        throw new \InvalidArgumentException(
+            sprintf(
+                'Produtos do tipo service aceitam apenas unidades de cobranca compativeis com execucao unica ou recorrencia. Unidade "%s" e invalida.',
+                $label
+            )
+        );
+    }
+
+    private function isCompatibleServiceUnit(ProductUnity $productUnit): bool
+    {
+        $normalized = $this->normalizeServiceUnitLabel(implode(' ', array_filter([
+            $productUnit->getProductUnit(),
+            $productUnit->getDescription(),
+        ])));
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        foreach (self::SERVICE_BILLING_PATTERNS as $pattern) {
+            if (preg_match($pattern, $normalized) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeServiceUnitLabel(string $value): string
+    {
+        $asciiValue = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($asciiValue === false) {
+            $asciiValue = $value;
+        }
+
+        $normalized = strtolower(trim($asciiValue));
+
+        return preg_replace('/\s+/', ' ', $normalized) ?: '';
     }
 }
