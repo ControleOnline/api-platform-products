@@ -259,7 +259,7 @@ class ProductService
             throw new \InvalidArgumentException('Empresa da importacao nao informada.');
         }
 
-        $this->denyUnlessCanReadCompany($company);
+        $this->denyUnlessCanManageCompany($company);
 
         $data = $this->normalizeImportRow($row);
         $this->validateImportRow($data);
@@ -806,6 +806,11 @@ class ProductService
             throw new AccessDeniedHttpException('Product company is required.');
         }
 
+        $this->denyUnlessCanManageCompany($company);
+    }
+
+    private function denyUnlessCanManageCompany(People $company): void
+    {
         if ($this->canManageCompany($company)) {
             return;
         }
