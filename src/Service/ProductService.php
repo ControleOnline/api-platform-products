@@ -5,18 +5,20 @@ namespace ControleOnline\Service;
 use ControleOnline\Entity\Category;
 use ControleOnline\Entity\Device;
 use ControleOnline\Entity\People;
+use ControleOnline\Entity\PeopleLink;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductCategory;
 use ControleOnline\Entity\ProductGroup;
 use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Entity\ProductUnity;
 use ControleOnline\Entity\Spool;
+use ControleOnline\Security\ProductAccessPolicy;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
-as Security;
 use Doctrine\ORM\QueryBuilder;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface as Security;
 
 class ProductService
 {
@@ -35,11 +37,38 @@ class ProductService
 
     public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
     {
-        // $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
+        $myPeople = $this->PeopleService->getMyPeople();
+        $accessibleCompanyIds = $this->getAccessibleCompanyIds();
+
+        if (!$myPeople instanceof People && $accessibleCompanyIds === []) {
+            $queryBuilder->andWhere('1 = 0');
+            return;
+        }
+
+        $companyAlias = 'product_company';
+        if (!in_array($companyAlias, $queryBuilder->getAllAliases(), true)) {
+            $queryBuilder->innerJoin(sprintf('%s.company', $rootAlias), $companyAlias);
+        }
+
+        $visibilityConditions = [];
+
+        if ($myPeople instanceof People) {
+            $visibilityConditions[] = sprintf('%s.id = :myPeopleId', $companyAlias);
+            $queryBuilder->setParameter('myPeopleId', (int) $myPeople->getId());
+        }
+
+        if ($accessibleCompanyIds !== []) {
+            $visibilityConditions[] = sprintf('%s.id IN(:accessibleCompanyIds)', $companyAlias);
+            $queryBuilder->setParameter('accessibleCompanyIds', $accessibleCompanyIds);
+        }
+
+        $queryBuilder->andWhere($queryBuilder->expr()->orX(...$visibilityConditions));
     }
 
     public function getProductsInventory(People $company): array
     {
+        $this->denyUnlessCanReadCompany($company);
+
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
     }
 
@@ -72,6 +101,27 @@ class ProductService
         );
     }
 
+    public function prePersist(Product $product): Product
+    {
+        $this->denyUnlessCanManageCatalog($product);
+
+        return $product;
+    }
+
+    public function preUpdate(Product $product): Product
+    {
+        $this->denyUnlessCanManageCatalog($product);
+
+        return $product;
+    }
+
+    public function preRemove(Product $product): Product
+    {
+        $this->denyUnlessCanManageCatalog($product);
+
+        return $product;
+    }
+
     public function productsInventoryPrintData(People $provider, Device $device): Spool
     {
         $products = $this->getProductsInventory($provider);
@@ -87,30 +137,32 @@ class ProductService
 
         foreach ($groupedByInventory as $inventoryName => $items) {
             $companyName = $items[0]['company_name'];
-            $this->printService->addLine("", "", "-");
-            $this->printService->addLine($companyName, "", " ");
-            $this->printService->addLine("INVENTARIO: " . $inventoryName, "", " ");
-            $this->printService->addLine("", "", "-");
-            $this->printService->addLine("Produto", "Disponivel", " ");
-            $this->printService->addLine("", "", "-");
+            $this->printService->addLine('', '', '-');
+            $this->printService->addLine($companyName, '', ' ');
+            $this->printService->addLine('INVENTARIO: ' . $inventoryName, '', ' ');
+            $this->printService->addLine('', '', '-');
+            $this->printService->addLine('Produto', 'Disponivel', ' ');
+            $this->printService->addLine('', '', '-');
 
             foreach ($items as $item) {
                 $productName = substr($item['product_name'], 0, 20);
                 if (!empty($item['description'])) {
-                    $productName .= " " . substr($item['description'], 0, 10);
+                    $productName .= ' ' . substr($item['description'], 0, 10);
                 }
-                $productName .= " (" . $item['productUnit'] . ")";
-                $available = str_pad($item['available'], 4, " ", STR_PAD_LEFT);
-                $this->printService->addLine($productName, $available, " ");
+                $productName .= ' (' . $item['productUnit'] . ')';
+                $available = str_pad($item['available'], 4, ' ', STR_PAD_LEFT);
+                $this->printService->addLine($productName, $available, ' ');
             }
 
-            $this->printService->addLine("", "", "-");
+            $this->printService->addLine('', '', '-');
         }
         return $this->printService->generatePrintData($device, $provider);
     }
 
     public function getPurchasingSuggestion(People $company)
     {
+        $this->denyUnlessCanReadCompany($company);
+
         return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
     }
 
@@ -142,6 +194,8 @@ class ProductService
             throw new NotFoundHttpException('Empresa não encontrada');
         }
 
+        $this->denyUnlessCanReadCompany($company);
+
         $product = $this->manager
             ->getRepository(Product::class)
             ->findProductBySkuAsInteger($sku, $company);
@@ -171,29 +225,29 @@ class ProductService
             $groupedByCompany[$companyName][] = $product;
         }
 
-        $this->printService->addLine("", "", "-");
-        $this->printService->addLine("SUGESTAO DE COMPRA", "", " ");
-        $this->printService->addLine("", "", "-");
+        $this->printService->addLine('', '', '-');
+        $this->printService->addLine('SUGESTAO DE COMPRA', '', ' ');
+        $this->printService->addLine('', '', '-');
 
         foreach ($groupedByCompany as $companyName => $items) {
-            $this->printService->addLine($companyName, "", " ");
-            $this->printService->addLine("", "", "-");
-            $this->printService->addLine("Produto", "Necessario", " ");
-            $this->printService->addLine("", "", "-");
+            $this->printService->addLine($companyName, '', ' ');
+            $this->printService->addLine('', '', '-');
+            $this->printService->addLine('Produto', 'Necessario', ' ');
+            $this->printService->addLine('', '', '-');
 
             foreach ($items as $item) {
                 $productName = substr($item['product_name'], 0, 20);
                 if (!empty($item['description'])) {
-                    $productName .= " " . substr($item['description'], 0, 10);
+                    $productName .= ' ' . substr($item['description'], 0, 10);
                 }
                 if (!empty($item['unity'])) {
-                    $productName .= " (" . $item['unity'] . ")";
+                    $productName .= ' (' . $item['unity'] . ')';
                 }
-                $needed = str_pad($item['needed'], 4, " ", STR_PAD_LEFT);
-                $this->printService->addLine($productName, $needed, " ");
+                $needed = str_pad($item['needed'], 4, ' ', STR_PAD_LEFT);
+                $this->printService->addLine($productName, $needed, ' ');
             }
 
-            $this->printService->addLine("", "", "-");
+            $this->printService->addLine('', '', '-');
         }
 
         return $this->printService->generatePrintData($device, $provider);
@@ -204,6 +258,8 @@ class ProductService
         if (!$company instanceof People) {
             throw new \InvalidArgumentException('Empresa da importacao nao informada.');
         }
+
+        $this->denyUnlessCanManageCompany($company);
 
         $data = $this->normalizeImportRow($row);
         $this->validateImportRow($data);
@@ -728,5 +784,107 @@ class ProductService
         }
 
         return false;
+    }
+
+    private function denyUnlessCanReadCompany(People $company): void
+    {
+        if ($this->getAccessPolicy()->canReadCompany(
+            (int) $company->getId(),
+            $this->normalizePeopleId($this->PeopleService->getMyPeople()),
+            $this->getAccessibleCompanyIds()
+        )) {
+            return;
+        }
+
+        throw new AccessDeniedHttpException('Company access denied.');
+    }
+
+    private function denyUnlessCanManageCatalog(Product $product): void
+    {
+        $company = $product->getCompany();
+        if (!$company instanceof People) {
+            throw new AccessDeniedHttpException('Product company is required.');
+        }
+
+        $this->denyUnlessCanManageCompany($company);
+    }
+
+    private function denyUnlessCanManageCompany(People $company): void
+    {
+        if ($this->canManageCompany($company)) {
+            return;
+        }
+
+        throw new AccessDeniedHttpException('You are not allowed to manage this company catalog.');
+    }
+
+    private function canManageCompany(People $company): bool
+    {
+        if (method_exists($this->PeopleService, 'canAccessCompany')) {
+            return (bool) $this->PeopleService->canAccessCompany($company, null, PeopleLink::MANAGER_LINK);
+        }
+
+        return $this->getAccessPolicy()->canManageCompany(
+            (int) $company->getId(),
+            $this->getManagedCompanyIds()
+        );
+    }
+
+    private function getAccessibleCompanyIds(): array
+    {
+        if (!method_exists($this->PeopleService, 'getMyCompanies')) {
+            return [];
+        }
+
+        return $this->extractPeopleIds($this->PeopleService->getMyCompanies());
+    }
+
+    private function getManagedCompanyIds(): array
+    {
+        if (!method_exists($this->PeopleService, 'getMyCompanies')) {
+            return [];
+        }
+
+        try {
+            $companies = $this->PeopleService->getMyCompanies(PeopleLink::MANAGER_LINK);
+        } catch (\Throwable) {
+            $companies = [];
+        }
+
+        return $this->extractPeopleIds($companies);
+    }
+
+    private function extractPeopleIds(iterable $companies): array
+    {
+        $ids = [];
+
+        foreach ($companies as $company) {
+            if (!$company instanceof People) {
+                continue;
+            }
+
+            $companyId = (int) $company->getId();
+            if ($companyId > 0) {
+                $ids[$companyId] = $companyId;
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    private function normalizePeopleId(mixed $people): ?int
+    {
+        if (!$people instanceof People) {
+            return null;
+        }
+
+        $peopleId = (int) $people->getId();
+
+        return $peopleId > 0 ? $peopleId : null;
+    }
+
+    private function getAccessPolicy(): ProductAccessPolicy
+    {
+        return new ProductAccessPolicy();
     }
 }

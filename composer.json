@@ -9,11 +9,20 @@
       "ControleOnline\\Controller\\": "src/Controller/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "ControleOnline\\Products\\Tests\\": "tests/"
+    }
+  },
   "authors": [
     {
       "name": "Controle Online",
       "email": "luiz.kim@controleonline.com"
     }
   ],
-  "require": {}
+  "require": {},
+  "require-dev": {
+    "doctrine/collections": "^2.3",
+    "phpunit/phpunit": "^12.1"
+  }
 }
