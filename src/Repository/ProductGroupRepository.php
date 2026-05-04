@@ -65,20 +65,32 @@ class ProductGroupRepository extends ServiceEntityRepository
 
         $qb = $this->createQueryBuilder('productGroup')
             ->addSelect('groupProduct', 'childProduct')
+            ->distinct()
+            ->leftJoin(
+                'productGroup.parentProducts',
+                'groupParent',
+                'WITH',
+                'groupParent.active = true'
+            )
             ->leftJoin(
                 'productGroup.products',
                 'groupProduct',
                 'WITH',
-                'groupProduct.active = true AND groupProduct.productType = :productType'
+                'groupProduct.active = true AND groupProduct.productType = :productType AND groupProduct.product IN (:products)'
             )
             ->leftJoin('groupProduct.productChild', 'childProduct')
-            ->andWhere('productGroup.parentProduct IN (:products)')
             ->andWhere('productGroup.active = true')
             ->setParameter('products', $products)
             ->setParameter('productType', $componentType)
             ->orderBy('productGroup.groupOrder', 'ASC')
             ->addOrderBy('productGroup.productGroup', 'ASC')
             ->addOrderBy('childProduct.product', 'ASC');
+
+        $qb->andWhere($qb->expr()->orX(
+            'productGroup.parentProduct IN (:products)',
+            'groupParent.parentProduct IN (:products)',
+            'groupProduct.product IN (:products)'
+        ));
 
         if (!empty($hiddenGroupIds)) {
             $qb->andWhere('productGroup.id NOT IN (:hiddenGroupIds)')

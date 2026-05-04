@@ -8,6 +8,7 @@ use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductCategory;
 use ControleOnline\Entity\ProductGroup;
+use ControleOnline\Entity\ProductGroupParent;
 use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Entity\ProductUnity;
 use ControleOnline\Entity\Spool;
@@ -574,6 +575,8 @@ class ProductService
             $this->manager->persist($group);
         }
 
+        $this->linkParentProductToGroup($parentProduct, $group);
+
         $required = $this->parseNullableBool($data['group_required'] ?? null, 'group_required');
         $minimum = $this->parseNullableInt($data['group_minimum'] ?? null, 'group_minimum');
         $maximum = $this->parseNullableInt($data['group_maximum'] ?? null, 'group_maximum');
@@ -609,6 +612,23 @@ class ProductService
         }
 
         return $group;
+    }
+
+    private function linkParentProductToGroup(Product $parentProduct, ProductGroup $group): void
+    {
+        $link = $this->manager->getRepository(ProductGroupParent::class)->findOneBy([
+            'parentProduct' => $parentProduct,
+            'productGroup' => $group,
+        ]);
+
+        if (!$link instanceof ProductGroupParent) {
+            $link = new ProductGroupParent();
+            $link->setParentProduct($parentProduct);
+            $link->setProductGroup($group);
+            $this->manager->persist($link);
+        }
+
+        $link->setActive(true);
     }
 
     private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void

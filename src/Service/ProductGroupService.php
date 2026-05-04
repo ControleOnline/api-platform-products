@@ -5,6 +5,7 @@ namespace ControleOnline\Service;
 use ControleOnline\Entity\Invoice;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductGroup;
+use ControleOnline\Entity\ProductGroupParent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
 as Security;
@@ -45,16 +46,56 @@ class ProductGroupService
             $this->entityManager->flush();
         }
 
+        $this->linkParentProduct($productGroup, $parentProduct);
+
         return $productGroup;
     }
 
     public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
     {
-        if ($product = $this->request->query->get('product', null)) {
-            $queryBuilder->join(sprintf('%s.products', $rootAlias), 'productGroupProduct');
-            $queryBuilder->join('productGroupProduct.product', 'product');
-            $queryBuilder->andWhere('product.id = :product');
-            $queryBuilder->setParameter('product', $product);
+        if ($product = $this->normalizeReferenceId($this->request->query->get('product', null))) {
+            $queryBuilder->leftJoin(sprintf('%s.parentProducts', $rootAlias), 'productGroupParentFilter');
+            $queryBuilder->leftJoin(sprintf('%s.products', $rootAlias), 'productGroupProductFilter');
+            $queryBuilder->andWhere($queryBuilder->expr()->orX(
+                sprintf('IDENTITY(%s.parentProduct) = :productGroupParentProduct', $rootAlias),
+                'IDENTITY(productGroupParentFilter.parentProduct) = :productGroupParentProduct',
+                'IDENTITY(productGroupProductFilter.product) = :productGroupParentProduct'
+            ));
+            $queryBuilder->andWhere(sprintf('%s.active = true', $rootAlias));
+            $queryBuilder->setParameter('productGroupParentProduct', $product);
+            $queryBuilder->distinct();
         }
+    }
+
+    private function linkParentProduct(ProductGroup $productGroup, Product $parentProduct): void
+    {
+        $link = $this->entityManager->getRepository(ProductGroupParent::class)->findOneBy([
+            'productGroup' => $productGroup,
+            'parentProduct' => $parentProduct,
+        ]);
+
+        if (!$link instanceof ProductGroupParent) {
+            $link = new ProductGroupParent();
+            $link->setProductGroup($productGroup);
+            $link->setParentProduct($parentProduct);
+            $this->entityManager->persist($link);
+        }
+
+        $link->setActive(true);
+        $this->entityManager->flush();
+    }
+
+    private function normalizeReferenceId(mixed $reference): ?int
+    {
+        if ($reference === null || $reference === '') {
+            return null;
+        }
+
+        if ($reference instanceof Product) {
+            return (int) $reference->getId();
+        }
+
+        $id = preg_replace('/\D+/', '', (string) $reference);
+        return $id !== '' ? (int) $id : null;
     }
 }
