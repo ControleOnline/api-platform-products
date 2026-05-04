@@ -130,6 +130,22 @@ class ProductService
         );
     }
 
+    public function printProductLabelFromPayload(array $payload): Spool
+    {
+        return $this->productLabelPrintData(
+            $this->requireCompanyReference($payload['people'] ?? null),
+            $this->requireDeviceReference($payload['device'] ?? null),
+            $payload
+        );
+    }
+
+    public function printProductLabelFromContent(?string $content): Spool
+    {
+        return $this->printProductLabelFromPayload(
+            $this->decodePayload($content)
+        );
+    }
+
     public function findProductBySkuPayload(array $payload): Product
     {
         if (!isset($payload['sku'], $payload['people'])) {
@@ -198,6 +214,27 @@ class ProductService
         }
 
         return $this->printService->generatePrintData($device, $provider);
+    }
+
+    public function productLabelPrintData(People $provider, Device $device, array $label): Spool
+    {
+        $lines = $this->resolveProductLabelLines($label);
+
+        if (empty($lines)) {
+            throw new \InvalidArgumentException('Conteúdo da etiqueta não informado.');
+        }
+
+        $this->printService->addLine("", "", "-");
+        foreach ($lines as $line) {
+            foreach ($this->wrapPrintLine($line) as $wrappedLine) {
+                $this->printService->addLine($wrappedLine, "", " ");
+            }
+        }
+        $this->printService->addLine("", "", "-");
+
+        return $this->printService->generatePrintData($device, $provider, [
+            'label' => 'product-label',
+        ]);
     }
 
     public function importFromCSV(array $row, ?People $company): void
@@ -289,6 +326,58 @@ class ProductService
         $decoded = json_decode($content, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function resolveProductLabelLines(array $label): array
+    {
+        $labelText = trim((string) ($label['labelText'] ?? ''));
+
+        if ($labelText !== '') {
+            return $this->normalizePrintLines(explode("\n", $labelText));
+        }
+
+        $productName = trim((string) ($label['productName'] ?? ''));
+        $handlingDate = trim((string) ($label['handlingDate'] ?? ''));
+        $expirationDate = trim((string) ($label['expirationDate'] ?? ''));
+        $freeText = trim((string) ($label['freeText'] ?? ''));
+
+        $lines = [];
+        if ($productName !== '') {
+            $lines[] = function_exists('mb_strtoupper')
+                ? mb_strtoupper($productName, 'UTF-8')
+                : strtoupper($productName);
+        }
+        if ($handlingDate !== '') {
+            $lines[] = 'MANEJO: ' . $handlingDate;
+        }
+        if ($expirationDate !== '') {
+            $lines[] = 'VALIDADE: ' . $expirationDate;
+        }
+        if ($freeText !== '') {
+            $lines[] = '';
+            $lines[] = $freeText;
+        }
+
+        return $this->normalizePrintLines($lines);
+    }
+
+    private function normalizePrintLines(array $lines): array
+    {
+        return array_values(array_filter(
+            array_map(
+                fn($line) => trim((string) $line),
+                $lines
+            ),
+            fn($line) => $line !== ''
+        ));
+    }
+
+    private function wrapPrintLine(string $line): array
+    {
+        $wrapped = wordwrap($line, 40, "\n", true);
+        $lines = explode("\n", $wrapped);
+
+        return $this->normalizePrintLines($lines);
     }
 
     private function requireDeviceReference(mixed $reference): Device
