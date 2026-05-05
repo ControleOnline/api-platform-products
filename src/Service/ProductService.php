@@ -424,6 +424,7 @@ class ProductService
             $data['item_product_type'] ?? null,
             $data['item_unit'] ?? null,
             $data['item_active'] ?? null,
+            $data['item_show_in_parent_queue'] ?? null,
         ]);
 
         if ($hasItemFields && !$this->hasValue($data['group_name'] ?? null)) {
@@ -729,6 +730,10 @@ class ProductService
     private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void
     {
         $link = $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
+            'product' => $parentProduct,
+            'productGroup' => $group,
+            'productChild' => $item,
+        ]) ?: $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
             'productGroup' => $group,
             'productChild' => $item,
         ]);
@@ -763,6 +768,11 @@ class ProductService
         $active = $this->parseNullableBool($data['item_active'] ?? null, 'item_active');
         if ($active !== null) {
             $link->setActive($active);
+        }
+
+        $showInParentQueue = $this->parseNullableBool($data['item_show_in_parent_queue'] ?? null, 'item_show_in_parent_queue');
+        if ($showInParentQueue !== null) {
+            $link->setShowInParentQueue($showInParentQueue);
         }
     }
 

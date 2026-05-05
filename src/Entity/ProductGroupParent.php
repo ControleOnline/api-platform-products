@@ -61,11 +61,6 @@ class ProductGroupParent
     #[Groups(['product_group_parent:read', 'product_group_parent:write'])]
     private $active = true;
 
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['showInQueue' => 'exact'])]
-    #[ORM\Column(name: 'show_in_queue', type: 'boolean', nullable: false, options: ['default' => '1'])]
-    #[Groups(['product_group_parent:read', 'product_group_parent:write'])]
-    private $showInQueue = true;
-
     public function getId()
     {
         return $this->id;
@@ -104,14 +99,4 @@ class ProductGroupParent
         return $this;
     }
 
-    public function getShowInQueue(): bool
-    {
-        return $this->showInQueue;
-    }
-
-    public function setShowInQueue(bool $showInQueue): self
-    {
-        $this->showInQueue = $showInQueue;
-        return $this;
-    }
 }
