@@ -5,6 +5,7 @@ namespace ControleOnline\Entity;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
@@ -33,6 +34,7 @@ use Doctrine\ORM\Mapping as ORM;
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['productGroup.productGroup' => 'ASC', 'product.product' => 'ASC'])]
+#[ApiFilter(ExistsFilter::class, properties: ['productGroup'])]
 #[ORM\Table(name: 'product_group_product')]
 #[ORM\Entity(repositoryClass: ProductGroupProductRepository::class)]
 class ProductGroupProduct
