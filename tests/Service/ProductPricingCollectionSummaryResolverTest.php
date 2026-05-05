@@ -12,8 +12,10 @@ use ControleOnline\Repository\ProductRepository;
 use ControleOnline\Service\ProductPricingCollectionSummaryResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class ProductPricingCollectionSummaryResolverTest extends TestCase
 {
     public function testBuildsPricingSummaryForMainProduct(): void
