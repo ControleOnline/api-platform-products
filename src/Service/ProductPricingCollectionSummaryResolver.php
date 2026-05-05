@@ -93,26 +93,46 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
      */
     private function findGroupItemsForProduct(Product $product, ?int $productGroupId = null): array
     {
-        $qb = $this->manager->getRepository(ProductGroupProduct::class)->createQueryBuilder('groupItem')
-            ->leftJoin('groupItem.productGroup', 'productGroup')
-            ->addSelect('productGroup', 'productChild')
-            ->leftJoin('groupItem.productChild', 'productChild')
-            ->andWhere('groupItem.product = :product')
-            ->andWhere('groupItem.active = true')
-            ->andWhere('groupItem.productType != :feedstockType')
-            ->setParameter('product', $product)
-            ->setParameter('feedstockType', 'feedstock')
-            ->orderBy('productGroup.groupOrder', 'ASC')
-            ->addOrderBy('productGroup.productGroup', 'ASC')
-            ->addOrderBy('groupItem.id', 'ASC');
+        $items = $this->manager->getRepository(ProductGroupProduct::class)->findBy(
+            [
+                'product' => $product,
+                'active' => true,
+            ],
+            ['id' => 'ASC']
+        );
+
+        $items = array_values(array_filter(
+            $items,
+            static fn(ProductGroupProduct $item): bool => 'feedstock' !== $item->getProductType()
+        ));
 
         if ($productGroupId) {
-            $qb
-                ->andWhere('productGroup.id = :productGroupId')
-                ->setParameter('productGroupId', $productGroupId);
+            $items = array_values(array_filter(
+                $items,
+                static fn(ProductGroupProduct $item): bool => $productGroupId === $item->getProductGroup()?->getId()
+            ));
         }
 
-        return $qb->getQuery()->getResult();
+        usort($items, static function (ProductGroupProduct $left, ProductGroupProduct $right): int {
+            $leftGroup = $left->getProductGroup();
+            $rightGroup = $right->getProductGroup();
+
+            $leftOrder = $leftGroup?->getGroupOrder() ?? 0;
+            $rightOrder = $rightGroup?->getGroupOrder() ?? 0;
+            if ($leftOrder !== $rightOrder) {
+                return $leftOrder <=> $rightOrder;
+            }
+
+            $leftLabel = $leftGroup?->getProductGroup() ?? '';
+            $rightLabel = $rightGroup?->getProductGroup() ?? '';
+            if ($leftLabel !== $rightLabel) {
+                return $leftLabel <=> $rightLabel;
+            }
+
+            return ($left->getId() ?? 0) <=> ($right->getId() ?? 0);
+        });
+
+        return $items;
     }
 
     /**
