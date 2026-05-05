@@ -8,11 +8,13 @@ use ControleOnline\Entity\ProductGroup;
 use ControleOnline\Entity\ProductGroupProduct;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolverInterface
 {
     public function __construct(
-        private EntityManagerInterface $manager
+        private EntityManagerInterface $manager,
+        private ?RequestStack $requestStack = null
     ) {}
 
     public function resolve(
@@ -27,14 +29,12 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
             return null;
         }
 
-        $productId = $this->normalizeId(
-            $context['filters']['product'] ?? null
-        );
+        $productId = $this->normalizeId($this->resolveFilterValue('product', $context));
         if (!$productId) {
             return null;
         }
 
-        $productGroupId = $this->normalizeId($context['filters']['productGroup'] ?? null);
+        $productGroupId = $this->normalizeId($this->resolveFilterValue('productGroup', $context));
 
         $mainProduct = $this->manager->getRepository(Product::class)->find($productId);
         if (!$mainProduct instanceof Product) {
@@ -319,5 +319,15 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
         $normalized = preg_replace('/\D+/', '', $raw);
 
         return '' !== (string) $normalized ? (int) $normalized : null;
+    }
+
+    private function resolveFilterValue(string $name, array $context): mixed
+    {
+        $filters = $context['filters'] ?? [];
+        if (array_key_exists($name, $filters)) {
+            return $filters[$name];
+        }
+
+        return $this->requestStack?->getCurrentRequest()?->query->all()[$name] ?? null;
     }
 }
