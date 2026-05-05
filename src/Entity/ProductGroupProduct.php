@@ -14,6 +14,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ControleOnline\Attribute\CollectionSummary;
 
 use ControleOnline\Repository\ProductGroupProductRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -39,6 +40,14 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ProductGroupProductRepository::class)]
 class ProductGroupProduct
 {
+    #[CollectionSummary(
+        name: 'pricing',
+        parameter: 'summary',
+        parameterValue: 'pricing',
+        resolver: ProductPricingCollectionSummaryResolver::class
+    )]
+    private $pricingSummary;
+
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
