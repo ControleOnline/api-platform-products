@@ -27,10 +27,16 @@ class ProductGroupService
 
     public function discoveryProductGroup(Product $parentProduct, string $groupName): ProductGroup
     {
-        $productGroup = $this->entityManager->getRepository(ProductGroup::class)->findOneBy([
-            'productGroup' => $groupName,
-            'parentProduct' => $parentProduct
-        ]);
+        $productGroup = $this->entityManager->getRepository(ProductGroup::class)
+            ->createQueryBuilder('productGroup')
+            ->leftJoin('productGroup.parentProducts', 'groupParent')
+            ->andWhere('productGroup.productGroup = :groupName')
+            ->andWhere('productGroup.parentProduct = :parentProduct OR groupParent.parentProduct = :parentProduct')
+            ->setParameter('groupName', $groupName)
+            ->setParameter('parentProduct', $parentProduct)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
         if (!$productGroup) {
             $productGroup = new ProductGroup();

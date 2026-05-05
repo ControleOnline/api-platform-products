@@ -644,10 +644,16 @@ class ProductService
 
     private function resolveImportGroup(Product $parentProduct, array $data): ProductGroup
     {
-        $group = $this->manager->getRepository(ProductGroup::class)->findOneBy([
-            'parentProduct' => $parentProduct,
-            'productGroup' => $data['group_name'],
-        ]);
+        $group = $this->manager->getRepository(ProductGroup::class)
+            ->createQueryBuilder('productGroup')
+            ->leftJoin('productGroup.parentProducts', 'groupParent')
+            ->andWhere('productGroup.productGroup = :groupName')
+            ->andWhere('productGroup.parentProduct = :parentProduct OR groupParent.parentProduct = :parentProduct')
+            ->setParameter('groupName', $data['group_name'])
+            ->setParameter('parentProduct', $parentProduct)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
         $isNew = !$group instanceof ProductGroup;
 
