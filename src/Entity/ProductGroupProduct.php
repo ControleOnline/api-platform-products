@@ -15,8 +15,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ControleOnline\Attribute\CollectionSummary;
-
 use ControleOnline\Repository\ProductGroupProductRepository;
+use ControleOnline\Service\ProductPricingCollectionSummaryResolver;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ApiResource(
