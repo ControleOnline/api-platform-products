@@ -112,7 +112,7 @@ class ProductPricingCollectionSummaryResolverTest extends TestCase
         self::assertSame(10.5, $summary['totalCost']);
         self::assertSame(6.5, $summary['groups'][0]['cost']);
         self::assertSame('Carne Fraldinha', $summary['groups'][0]['cheapestOption']['productChild']['product']);
-        self::assertSame(['2', '3', '4'], array_keys($summary['groupItemCosts']));
+        self::assertSame(['2', '3', '4'], array_map('strval', array_keys($summary['groupItemCosts'])));
         self::assertTrue($summary['groupItemCosts']['2']['hasFeedstocks']);
         self::assertSame(2.1, $summary['groupItemCosts']['4']['cost']);
     }
