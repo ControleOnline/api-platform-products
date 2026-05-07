@@ -326,7 +326,13 @@ class ProductMenuService
                     continue;
                 }
 
+                $parentProduct = $groupProduct->getProduct();
+                if (!$parentProduct instanceof Product) {
+                    continue;
+                }
+
                 $items[] = [
+                    'parentProductId' => $parentProduct->getId(),
                     'id' => $childProduct->getId(),
                     'name' => trim((string) $childProduct->getProduct()),
                     'description' => $this->normalizeDescription($childProduct->getDescription()),
@@ -340,15 +346,44 @@ class ProductMenuService
                 continue;
             }
 
-            $groupedProducts[$group->getParentProduct()->getId()][] = [
-                'id' => $group->getId(),
-                'name' => trim((string) $group->getProductGroup()),
-                'meta' => $this->buildGroupMeta($group),
-                'items' => $items,
-            ];
+            foreach ($this->splitGroupItemsByParentProduct($items) as $parentProductId => $parentItems) {
+                $groupedProducts[$parentProductId][] = [
+                    'id' => $group->getId(),
+                    'name' => trim((string) $group->getProductGroup()),
+                    'meta' => $this->buildGroupMeta($group),
+                    'items' => array_map(
+                        static function (array $item): array {
+                            unset($item['parentProductId']);
+                            return $item;
+                        },
+                        $parentItems
+                    ),
+                ];
+            }
         }
 
         return $groupedProducts;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $items
+     *
+     * @return array<int, array<int, array<string, mixed>>>
+     */
+    private function splitGroupItemsByParentProduct(array $items): array
+    {
+        $grouped = [];
+
+        foreach ($items as $item) {
+            $parentProductId = (int) ($item['parentProductId'] ?? 0);
+            if ($parentProductId <= 0) {
+                continue;
+            }
+
+            $grouped[$parentProductId][] = $item;
+        }
+
+        return $grouped;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace ControleOnline\Entity;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
@@ -13,8 +14,9 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-
+use ControleOnline\Attribute\CollectionSummary;
 use ControleOnline\Repository\ProductGroupProductRepository;
+use ControleOnline\Service\ProductPricingCollectionSummaryResolver;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ApiResource(
@@ -33,10 +35,19 @@ use Doctrine\ORM\Mapping as ORM;
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['productGroup.productGroup' => 'ASC', 'product.product' => 'ASC'])]
+#[ApiFilter(ExistsFilter::class, properties: ['productGroup'])]
 #[ORM\Table(name: 'product_group_product')]
 #[ORM\Entity(repositoryClass: ProductGroupProductRepository::class)]
 class ProductGroupProduct
 {
+    #[CollectionSummary(
+        name: 'pricing',
+        parameter: 'summary',
+        parameterValue: 'pricing',
+        resolver: ProductPricingCollectionSummaryResolver::class
+    )]
+    private $pricingSummary;
+
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
@@ -77,6 +88,11 @@ class ProductGroupProduct
     #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
     #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $active = true;
+
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['showInParentQueue' => 'exact'])]
+    #[ORM\Column(name: 'show_in_parent_queue', type: 'boolean', nullable: false, options: ['default' => '1'])]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
+    private $showInParentQueue = true;
 
     public function getId()
     {
@@ -157,6 +173,17 @@ class ProductGroupProduct
     public function setActive(bool $active): self
     {
         $this->active = $active;
+        return $this;
+    }
+
+    public function getShowInParentQueue(): bool
+    {
+        return $this->showInParentQueue;
+    }
+
+    public function setShowInParentQueue(bool $showInParentQueue): self
+    {
+        $this->showInParentQueue = $showInParentQueue;
         return $this;
     }
 }

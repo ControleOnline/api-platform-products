@@ -80,6 +80,9 @@ class ProductGroup
     #[Groups(['product_group:write'])]
     private $products;
 
+    #[ORM\OneToMany(targetEntity: ProductGroupParent::class, mappedBy: 'productGroup', orphanRemoval: true)]
+    private $parentProducts;
+
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact', 'parentProduct.company' => 'exact'])]
     #[ORM\JoinColumn(nullable: false)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
@@ -89,6 +92,7 @@ class ProductGroup
     public function __construct()
     {
         $this->products = new ArrayCollection();
+        $this->parentProducts = new ArrayCollection();
     }
 
     public function getId()
@@ -186,6 +190,30 @@ class ProductGroup
     public function getProducts(): Collection
     {
         return $this->products;
+    }
+
+    public function getParentProducts(): Collection
+    {
+        return $this->parentProducts;
+    }
+
+    public function addParentProduct(ProductGroupParent $parentProduct): self
+    {
+        if (!$this->parentProducts->contains($parentProduct)) {
+            $this->parentProducts[] = $parentProduct;
+            $parentProduct->setProductGroup($this);
+        }
+        return $this;
+    }
+
+    public function removeParentProduct(ProductGroupParent $parentProduct): self
+    {
+        if ($this->parentProducts->removeElement($parentProduct)) {
+            if ($parentProduct->getProductGroup() === $this) {
+                $parentProduct->setProductGroup(null);
+            }
+        }
+        return $this;
     }
 
     public function addProduct(ProductGroupProduct $product): self

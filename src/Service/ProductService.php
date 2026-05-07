@@ -8,6 +8,7 @@ use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductCategory;
 use ControleOnline\Entity\ProductGroup;
+use ControleOnline\Entity\ProductGroupParent;
 use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Entity\ProductUnity;
 use ControleOnline\Entity\Spool;
@@ -129,6 +130,22 @@ class ProductService
         );
     }
 
+    public function printProductLabelFromPayload(array $payload): Spool
+    {
+        return $this->productLabelPrintData(
+            $this->requireCompanyReference($payload['people'] ?? null),
+            $this->requireDeviceReference($payload['device'] ?? null),
+            $payload
+        );
+    }
+
+    public function printProductLabelFromContent(?string $content): Spool
+    {
+        return $this->printProductLabelFromPayload(
+            $this->decodePayload($content)
+        );
+    }
+
     public function findProductBySkuPayload(array $payload): Product
     {
         if (!isset($payload['sku'], $payload['people'])) {
@@ -197,6 +214,27 @@ class ProductService
         }
 
         return $this->printService->generatePrintData($device, $provider);
+    }
+
+    public function productLabelPrintData(People $provider, Device $device, array $label): Spool
+    {
+        $lines = $this->resolveProductLabelLines($label);
+
+        if (empty($lines)) {
+            throw new \InvalidArgumentException('Conteúdo da etiqueta não informado.');
+        }
+
+        $this->printService->addLine("", "", "-");
+        foreach ($lines as $line) {
+            foreach ($this->wrapPrintLine($line) as $wrappedLine) {
+                $this->printService->addLine($wrappedLine, "", " ");
+            }
+        }
+        $this->printService->addLine("", "", "-");
+
+        return $this->printService->generatePrintData($device, $provider, [
+            'label' => 'product-label',
+        ]);
     }
 
     public function importFromCSV(array $row, ?People $company): void
@@ -290,6 +328,58 @@ class ProductService
         return is_array($decoded) ? $decoded : [];
     }
 
+    private function resolveProductLabelLines(array $label): array
+    {
+        $labelText = trim((string) ($label['labelText'] ?? ''));
+
+        if ($labelText !== '') {
+            return $this->normalizePrintLines(explode("\n", $labelText));
+        }
+
+        $productName = trim((string) ($label['productName'] ?? ''));
+        $handlingDate = trim((string) ($label['handlingDate'] ?? ''));
+        $expirationDate = trim((string) ($label['expirationDate'] ?? ''));
+        $freeText = trim((string) ($label['freeText'] ?? ''));
+
+        $lines = [];
+        if ($productName !== '') {
+            $lines[] = function_exists('mb_strtoupper')
+                ? mb_strtoupper($productName, 'UTF-8')
+                : strtoupper($productName);
+        }
+        if ($handlingDate !== '') {
+            $lines[] = 'MANEJO: ' . $handlingDate;
+        }
+        if ($expirationDate !== '') {
+            $lines[] = 'VALIDADE: ' . $expirationDate;
+        }
+        if ($freeText !== '') {
+            $lines[] = '';
+            $lines[] = $freeText;
+        }
+
+        return $this->normalizePrintLines($lines);
+    }
+
+    private function normalizePrintLines(array $lines): array
+    {
+        return array_values(array_filter(
+            array_map(
+                fn($line) => trim((string) $line),
+                $lines
+            ),
+            fn($line) => $line !== ''
+        ));
+    }
+
+    private function wrapPrintLine(string $line): array
+    {
+        $wrapped = wordwrap($line, 40, "\n", true);
+        $lines = explode("\n", $wrapped);
+
+        return $this->normalizePrintLines($lines);
+    }
+
     private function requireDeviceReference(mixed $reference): Device
     {
         $device = $this->resolveDeviceReference($reference);
@@ -334,6 +424,7 @@ class ProductService
             $data['item_product_type'] ?? null,
             $data['item_unit'] ?? null,
             $data['item_active'] ?? null,
+            $data['item_show_in_parent_queue'] ?? null,
         ]);
 
         if ($hasItemFields && !$this->hasValue($data['group_name'] ?? null)) {
@@ -554,10 +645,16 @@ class ProductService
 
     private function resolveImportGroup(Product $parentProduct, array $data): ProductGroup
     {
-        $group = $this->manager->getRepository(ProductGroup::class)->findOneBy([
-            'parentProduct' => $parentProduct,
-            'productGroup' => $data['group_name'],
-        ]);
+        $group = $this->manager->getRepository(ProductGroup::class)
+            ->createQueryBuilder('productGroup')
+            ->leftJoin('productGroup.parentProducts', 'groupParent')
+            ->andWhere('productGroup.productGroup = :groupName')
+            ->andWhere('productGroup.parentProduct = :parentProduct OR groupParent.parentProduct = :parentProduct')
+            ->setParameter('groupName', $data['group_name'])
+            ->setParameter('parentProduct', $parentProduct)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
         $isNew = !$group instanceof ProductGroup;
 
@@ -573,6 +670,8 @@ class ProductService
             $group->setActive(true);
             $this->manager->persist($group);
         }
+
+        $this->linkParentProductToGroup($parentProduct, $group);
 
         $required = $this->parseNullableBool($data['group_required'] ?? null, 'group_required');
         $minimum = $this->parseNullableInt($data['group_minimum'] ?? null, 'group_minimum');
@@ -611,9 +710,30 @@ class ProductService
         return $group;
     }
 
+    private function linkParentProductToGroup(Product $parentProduct, ProductGroup $group): void
+    {
+        $link = $this->manager->getRepository(ProductGroupParent::class)->findOneBy([
+            'parentProduct' => $parentProduct,
+            'productGroup' => $group,
+        ]);
+
+        if (!$link instanceof ProductGroupParent) {
+            $link = new ProductGroupParent();
+            $link->setParentProduct($parentProduct);
+            $link->setProductGroup($group);
+            $this->manager->persist($link);
+        }
+
+        $link->setActive(true);
+    }
+
     private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void
     {
         $link = $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
+            'product' => $parentProduct,
+            'productGroup' => $group,
+            'productChild' => $item,
+        ]) ?: $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
             'productGroup' => $group,
             'productChild' => $item,
         ]);
@@ -648,6 +768,11 @@ class ProductService
         $active = $this->parseNullableBool($data['item_active'] ?? null, 'item_active');
         if ($active !== null) {
             $link->setActive($active);
+        }
+
+        $showInParentQueue = $this->parseNullableBool($data['item_show_in_parent_queue'] ?? null, 'item_show_in_parent_queue');
+        if ($showInParentQueue !== null) {
+            $link->setShowInParentQueue($showInParentQueue);
         }
     }
 

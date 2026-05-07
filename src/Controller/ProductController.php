@@ -69,6 +69,21 @@ class ProductController extends AbstractController
         return new JsonResponse($data);
     }
 
+    #[Route('/products/labels/print', name: 'products_labels_print', methods: ['POST'])]
+    #[Security("is_granted('ROLE_HUMAN')")]
+    public function printLabel(Request $request): JsonResponse
+    {
+        try {
+            $printData = $this->productService->printProductLabelFromContent(
+                $request->getContent()
+            );
+
+            return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
+        } catch (Exception $e) {
+            return new JsonResponse($this->hydratorService->error($e));
+        }
+    }
+
     #[Route('/products/inventory/print', name: 'products_inventory_print', methods: ['POST'])]
     #[Security("is_granted('ROLE_HUMAN')")]
     public function print(Request $request): JsonResponse
