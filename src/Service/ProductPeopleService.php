@@ -9,13 +9,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface as Security;
 
 class ProductPeopleService
 {
     public function __construct(
         private EntityManagerInterface $manager,
-        private Security $security,
         private PeopleService $peopleService,
         private ProductService $productService
     ) {}
