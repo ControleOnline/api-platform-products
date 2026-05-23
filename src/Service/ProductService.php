@@ -668,6 +668,7 @@ class ProductService
             $group->setGroupOrder(0);
             $group->setPriceCalculation('sum');
             $group->setActive(true);
+            $group->setShowInDisplay(false);
             $this->manager->persist($group);
         }
 

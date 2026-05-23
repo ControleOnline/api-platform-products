@@ -47,6 +47,7 @@ class ProductGroupService
             $productGroup->setMinimum(0);
             $productGroup->setMaximum(0);
             $productGroup->setActive(true);
+            $productGroup->setShowInDisplay(false);
             $productGroup->setGroupOrder(0);
             $this->entityManager->persist($productGroup);
             $this->entityManager->flush();

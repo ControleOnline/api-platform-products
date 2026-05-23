@@ -9,6 +9,7 @@
 - Regras de venda e pedido pertencem a `orders`.
 - Regras de fila operacional de preparo pertencem a `queue`.
 - Os metadados de grupo de produto (`priceCalculation`, `required`, `minimum`, `maximum`) e a quantidade/preco padrao de `product_group_product` formam o contrato de catalogo consumido pela tela de customizacao no frontend. Mudancas nesses campos precisam manter a leitura previsivel para `CustomizeScreen`.
+- `ProductGroup.showInDisplay` e um metadado operacional de visibilidade. O backend deve persistir o campo, os novos grupos devem nascer com `false` e a leitura de catalogo/preview precisa respeitar o valor salvo sem quebrar o agrupamento dos itens.
 
 ## Regras de seguranca e autorizacao
 - Entidade analisada: `Product`.

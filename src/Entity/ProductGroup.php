@@ -72,6 +72,10 @@ class ProductGroup
     #[Groups(['product_group:read', 'orders-queue:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $active = true;
 
+    #[ORM\Column(name: 'show_in_display', type: 'boolean', nullable: false, options: ['default' => '0'])]
+    #[Groups(['product_group:read', 'orders-queue:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    private $showInDisplay = false;
+
     #[ORM\Column(name: 'group_order', type: 'integer', nullable: false)]
     #[Groups(['product_group:read', 'orders-queue:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $groupOrder = 0;
@@ -185,6 +189,22 @@ class ProductGroup
     public function getActive(): ?bool
     {
         return $this->active;
+    }
+
+    public function isShowInDisplay(): bool
+    {
+        return $this->showInDisplay;
+    }
+
+    public function getShowInDisplay(): ?bool
+    {
+        return $this->showInDisplay;
+    }
+
+    public function setShowInDisplay(bool $showInDisplay): self
+    {
+        $this->showInDisplay = $showInDisplay;
+        return $this;
     }
 
     public function getProducts(): Collection
