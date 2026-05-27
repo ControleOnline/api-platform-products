@@ -56,7 +56,7 @@ class ProductGroupProduct
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'exact'])]
-    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', nullable: true)]
     #[ORM\ManyToOne(targetEntity: Product::class)]
     #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $product;
@@ -99,12 +99,12 @@ class ProductGroupProduct
         return $this->id;
     }
 
-    public function getProduct(): Product
+    public function getProduct(): ?Product
     {
         return $this->product;
     }
 
-    public function setProduct(Product $product): self
+    public function setProduct(?Product $product): self
     {
         $this->product = $product;
         return $this;

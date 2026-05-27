@@ -723,16 +723,18 @@ class ProductService
     private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void
     {
         $productType = $data['item_product_type'] ?? null;
+        $itemQuantity = $this->parseNullableFloat($data['item_quantity'] ?? null, 'item_quantity');
+        $itemPrice = $this->parseNullableFloat($data['item_price'] ?? null, 'item_price');
+        $quantity = $itemQuantity ?? 1.0;
         $groupProductRepository = $this->manager->getRepository(ProductGroupProduct::class);
-        $link = $groupProductRepository->findSharedGroupItem($group, $item, $productType);
+        $link = $groupProductRepository->findSharedGroupItem($group, $item, $productType, $quantity);
 
         if (!$link instanceof ProductGroupProduct) {
             $link = new ProductGroupProduct();
-            $link->setProduct($parentProduct);
             $link->setProductGroup($group);
             $link->setProductChild($item);
             $link->setProductType('component');
-            $link->setQuantity(1);
+            $link->setQuantity($quantity);
             $link->setPrice(0);
             $link->setActive(true);
             $this->manager->persist($link);
@@ -742,12 +744,6 @@ class ProductService
             $link->setProductType($productType);
         }
 
-        $itemQuantity = $this->parseNullableFloat($data['item_quantity'] ?? null, 'item_quantity');
-        if ($itemQuantity !== null) {
-            $link->setQuantity($itemQuantity);
-        }
-
-        $itemPrice = $this->parseNullableFloat($data['item_price'] ?? null, 'item_price');
         if ($itemPrice !== null) {
             $link->setPrice($itemPrice);
         }
@@ -760,6 +756,12 @@ class ProductService
         $showInParentQueue = $this->parseNullableBool($data['item_show_in_parent_queue'] ?? null, 'item_show_in_parent_queue');
         if ($showInParentQueue !== null) {
             $link->setShowInParentQueue($showInParentQueue);
+        }
+
+        if (($link->getProductType() ?? 'component') === 'feedstock') {
+            $link->setProduct($parentProduct);
+        } else {
+            $link->setProduct(null);
         }
     }
 

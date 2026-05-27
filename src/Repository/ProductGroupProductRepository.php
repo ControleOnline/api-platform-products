@@ -25,7 +25,12 @@ class ProductGroupProductRepository extends ServiceEntityRepository
         parent::__construct($registry, ProductGroupProduct::class);
     }
 
-    public function findSharedGroupItem(ProductGroup $group, Product $productChild, ?string $productType = null): ?ProductGroupProduct
+    public function findSharedGroupItem(
+        ProductGroup $group,
+        Product $productChild,
+        ?string $productType = null,
+        ?float $quantity = null
+    ): ?ProductGroupProduct
     {
         $qb = $this->createQueryBuilder('groupProduct')
             ->andWhere('groupProduct.productGroup = :productGroup')
@@ -40,10 +45,20 @@ class ProductGroupProductRepository extends ServiceEntityRepository
                 ->setParameter('productType', $productType);
         }
 
+        if ($quantity !== null) {
+            $qb->andWhere('groupProduct.quantity = :quantity')
+                ->setParameter('quantity', $quantity);
+        }
+
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findLinkedGroupItemForParent(Product $parentProduct, Product $productChild, ?string $productType = null): ?ProductGroupProduct
+    public function findLinkedGroupItemForParent(
+        Product $parentProduct,
+        Product $productChild,
+        ?string $productType = null,
+        ?float $quantity = null
+    ): ?ProductGroupProduct
     {
         $qb = $this->createQueryBuilder('groupProduct')
             ->innerJoin('groupProduct.productGroup', 'productGroup')
@@ -59,13 +74,14 @@ class ProductGroupProductRepository extends ServiceEntityRepository
                 ->setParameter('productType', $productType);
         }
 
-        $qb->andWhere($qb->expr()->orX(
-            'groupProduct.product = :parentProduct',
-            'productGroup.parentProduct = :parentProduct',
-            $qb->expr()->andX(
-                'groupParent.active = true',
-                'groupParent.parentProduct = :parentProduct'
-            )
+        if ($quantity !== null) {
+            $qb->andWhere('groupProduct.quantity = :quantity')
+                ->setParameter('quantity', $quantity);
+        }
+
+        $qb->andWhere($qb->expr()->andX(
+            'groupParent.active = true',
+            'groupParent.parentProduct = :parentProduct'
         ));
 
         $qb->setParameter('parentProduct', $parentProduct);

@@ -24,7 +24,7 @@ class ProductMenuService
     private const CATEGORY_CONTEXT = 'products';
     private const MODEL_CONTEXT = 'menu';
     private const MAIN_PRODUCT_TYPES = ['manufactured', 'custom', 'product', 'service'];
-    private const GROUP_COMPONENT_TYPE = 'component';
+    private const GROUP_MODIFIER_TYPES = ['component', 'package'];
     private const IMAGE_VARIANTS = [
         'hero' => ['maxWidth' => 1400, 'maxHeight' => 900, 'maxBytes' => 800000, 'quality' => 82],
         'category' => ['maxWidth' => 900, 'maxHeight' => 520, 'maxBytes' => 500000, 'quality' => 80],
@@ -165,7 +165,7 @@ class ProductMenuService
             ? $this->groupProductsByCustomProduct(
                 $this->productGroupRepository->findVisibleComponentGroupsForMenuCatalog(
                     array_values($customProducts),
-                    self::GROUP_COMPONENT_TYPE,
+                    self::GROUP_MODIFIER_TYPES,
                     $hiddenGroupIds
                 )
             )
@@ -322,7 +322,7 @@ class ProductMenuService
                     continue;
                 }
 
-                if (!$groupProduct->isActive() || $groupProduct->getProductType() !== self::GROUP_COMPONENT_TYPE) {
+                if (!$groupProduct->isActive() || !in_array($groupProduct->getProductType(), self::GROUP_MODIFIER_TYPES, true)) {
                     continue;
                 }
 

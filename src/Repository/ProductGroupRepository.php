@@ -53,15 +53,9 @@ class ProductGroupRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('productGroup');
         $qb->leftJoin('productGroup.parentProducts', 'groupParent')
             ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
-            ->leftJoin('productGroup.parentProduct', 'legacyParentProduct')
             ->andWhere('productGroup.productGroup = :groupName')
-            ->andWhere($qb->expr()->orX(
-                $qb->expr()->andX(
-                    'groupParent.active = true',
-                    'groupParentProduct.company = :company'
-                ),
-                'legacyParentProduct.company = :company'
-            ))
+            ->andWhere('groupParent.active = true')
+            ->andWhere('groupParentProduct.company = :company')
             ->setParameter('groupName', $groupName)
             ->setParameter('company', $parentProduct->getCompany())
             ->orderBy('productGroup.id', 'ASC')
@@ -79,7 +73,6 @@ class ProductGroupRepository extends ServiceEntityRepository
             ->distinct()
             ->leftJoin('productGroup.parentProducts', 'groupParent')
             ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
-            ->leftJoin('productGroup.parentProduct', 'legacyParentProduct')
             ->leftJoin(
                 'productGroup.products',
                 'groupProduct',
@@ -87,16 +80,12 @@ class ProductGroupRepository extends ServiceEntityRepository
                 'groupProduct.active = true'
             )
             ->leftJoin('groupProduct.productChild', 'childProduct')
-            ->addSelect('groupParent', 'groupParentProduct', 'legacyParentProduct', 'groupProduct', 'childProduct')
+            ->addSelect('groupParent', 'groupParentProduct', 'groupProduct', 'childProduct')
             ->andWhere('productGroup.active = true');
 
-        $qb->andWhere($qb->expr()->orX(
-            $qb->expr()->andX(
-                'groupParent.active = true',
-                'groupParentProduct = :product'
-            ),
-            'legacyParentProduct = :product',
-            'groupProduct.product = :product'
+        $qb->andWhere($qb->expr()->andX(
+            'groupParent.active = true',
+            'groupParentProduct = :product'
         ));
 
         if ($requiredOnly) {
@@ -123,7 +112,7 @@ class ProductGroupRepository extends ServiceEntityRepository
      */
     public function findVisibleComponentGroupsForMenuCatalog(
         array $products,
-        string $componentType,
+        array $productTypes,
         array $hiddenGroupIds = []
     ): array {
         if (empty($products)) {
@@ -139,7 +128,7 @@ class ProductGroupRepository extends ServiceEntityRepository
             ->distinct()
             ->andWhere('productGroup.active = true')
             ->setParameter('productIds', $productIds)
-            ->setParameter('productType', $componentType)
+            ->setParameter('productTypes', $productTypes)
             ->orderBy('productGroup.groupOrder', 'ASC')
             ->addOrderBy('productGroup.productGroup', 'ASC')
             ->addOrderBy('childProduct.product', 'ASC');
@@ -156,13 +145,12 @@ class ProductGroupRepository extends ServiceEntityRepository
                 'productGroup.products',
                 'groupProduct',
                 'WITH',
-                'groupProduct.active = true AND groupProduct.productType = :productType'
+                'groupProduct.active = true AND groupProduct.productType IN (:productTypes)'
             )
             ->leftJoin('groupProduct.productChild', 'childProduct')
             ->andWhere($qb->expr()->orX(
                 'IDENTITY(productGroup.parentProduct) IN (:productIds)',
-                'IDENTITY(groupParentProduct) IN (:productIds)',
-                'IDENTITY(groupProduct.product) IN (:productIds)'
+                'IDENTITY(groupParentProduct) IN (:productIds)'
             ));
 
         if (!empty($hiddenGroupIds)) {
