@@ -4,6 +4,7 @@ namespace ControleOnline\Repository;
 
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductGroup;
+use ControleOnline\Entity\People;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
@@ -48,16 +49,13 @@ class ProductGroupRepository extends ServiceEntityRepository
         }
     }
 
-    public function findSharedByNameAndCompany(string $groupName, Product $parentProduct): ?ProductGroup
+    public function findSharedByNameAndCompany(string $groupName, People $company): ?ProductGroup
     {
         $qb = $this->createQueryBuilder('productGroup');
-        $qb->leftJoin('productGroup.parentProducts', 'groupParent')
-            ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
-            ->andWhere('productGroup.productGroup = :groupName')
-            ->andWhere('groupParent.active = true')
-            ->andWhere('groupParentProduct.company = :company')
+        $qb->andWhere('productGroup.productGroup = :groupName')
+            ->andWhere('productGroup.company = :company')
             ->setParameter('groupName', $groupName)
-            ->setParameter('company', $parentProduct->getCompany())
+            ->setParameter('company', $company)
             ->orderBy('productGroup.id', 'ASC')
             ->setMaxResults(1);
 

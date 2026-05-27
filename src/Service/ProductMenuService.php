@@ -376,10 +376,6 @@ class ProductMenuService
             }
         }
 
-        if (empty($parentProductIds) && $group->getParentProduct() instanceof Product) {
-            $parentProductIds[] = (int) $group->getParentProduct()->getId();
-        }
-
         return array_values(array_unique(array_filter($parentProductIds)));
     }
 

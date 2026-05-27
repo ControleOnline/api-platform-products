@@ -87,11 +87,11 @@ class ProductGroup
     #[ORM\OneToMany(targetEntity: ProductGroupParent::class, mappedBy: 'productGroup', orphanRemoval: true)]
     private $parentProducts;
 
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact', 'parentProduct.company' => 'exact'])]
-    #[ORM\JoinColumn(nullable: false)]
-    #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[Groups(['product_group:read', 'orders-queue:read', 'product_group:write'])]
-    private $parentProduct;
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
+    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: People::class)]
+    #[Groups(['product_group:read', 'product_group:write'])]
+    private $company;
 
     public function __construct()
     {
@@ -255,14 +255,14 @@ class ProductGroup
         return $this;
     }
 
-    public function getParentProduct()
+    public function getCompany(): ?People
     {
-        return $this->parentProduct;
+        return $this->company;
     }
 
-    public function setParentProduct($parentProduct): self
+    public function setCompany(People $company): self
     {
-        $this->parentProduct = $parentProduct;
+        $this->company = $company;
         return $this;
     }
 }

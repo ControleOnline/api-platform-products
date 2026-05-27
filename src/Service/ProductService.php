@@ -267,7 +267,7 @@ class ProductService
             return;
         }
 
-        $group = $this->resolveImportGroup($product, $data);
+        $group = $this->resolveImportGroup($product, $company, $data);
 
         if (!$this->hasValue($data['item_name'])) {
             $this->manager->flush();
@@ -643,16 +643,16 @@ class ProductService
         $this->manager->persist($link);
     }
 
-    private function resolveImportGroup(Product $parentProduct, array $data): ProductGroup
+    private function resolveImportGroup(Product $parentProduct, People $company, array $data): ProductGroup
     {
         $group = $this->manager->getRepository(ProductGroup::class)
-            ->findSharedByNameAndCompany($data['group_name'], $parentProduct);
+            ->findSharedByNameAndCompany($data['group_name'], $company);
 
         $isNew = !$group instanceof ProductGroup;
 
         if ($isNew) {
             $group = new ProductGroup();
-            $group->setParentProduct($parentProduct);
+            $group->setCompany($company);
             $group->setProductGroup($data['group_name']);
             $group->setRequired(false);
             $group->setMinimum(0);

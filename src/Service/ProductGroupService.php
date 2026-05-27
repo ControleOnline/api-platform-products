@@ -3,6 +3,7 @@
 namespace ControleOnline\Service;
 
 use ControleOnline\Entity\Invoice;
+use ControleOnline\Entity\People;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductGroup;
 use ControleOnline\Entity\ProductGroupParent;
@@ -27,12 +28,17 @@ class ProductGroupService
 
     public function discoveryProductGroup(Product $parentProduct, string $groupName): ProductGroup
     {
+        $company = $parentProduct->getCompany();
+        if (!$company instanceof People) {
+            throw new \LogicException('Parent product company is required to discover shared groups.');
+        }
+
         $productGroup = $this->entityManager->getRepository(ProductGroup::class)
-            ->findSharedByNameAndCompany($groupName, $parentProduct);
+            ->findSharedByNameAndCompany($groupName, $company);
 
         if (!$productGroup) {
             $productGroup = new ProductGroup();
-            $productGroup->setParentProduct($parentProduct);
+            $productGroup->setCompany($company);
             $productGroup->setProductGroup($groupName);
             $productGroup->setPriceCalculation('sum');
             $productGroup->setRequired(false);

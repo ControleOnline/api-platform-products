@@ -164,7 +164,8 @@ class ProductCatalogNormalizedExportServiceTest extends TestCase
             ->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql, array $params): array {
                 self::assertStringContainsString('ON pgp.product_group_id = pg.id', $sql);
-                self::assertStringNotContainsString('pgp.product_id = parent.id', $sql);
+                self::assertStringContainsString('ON parent.id = pg_parent.parent_product_id', $sql);
+                self::assertStringNotContainsString('COALESCE(pg_parent.parent_product_id, pg.parent_product_id)', $sql);
                 self::assertSame(7, $params['companyId']);
 
                 return [];

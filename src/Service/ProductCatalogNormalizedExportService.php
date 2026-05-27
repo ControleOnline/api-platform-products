@@ -255,7 +255,7 @@ FROM product_group pg
 LEFT JOIN product_group_parent pg_parent
     ON pg_parent.product_group_id = pg.id
 LEFT JOIN product parent
-    ON parent.id = COALESCE(pg_parent.parent_product_id, pg.parent_product_id)
+    ON parent.id = pg_parent.parent_product_id
 LEFT JOIN product_unity parent_unit
     ON parent_unit.id = parent.product_unity_id
 LEFT JOIN product_category pc ON pc.id = (
