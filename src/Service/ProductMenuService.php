@@ -310,6 +310,11 @@ class ProductMenuService
         $groupedProducts = [];
 
         foreach ($groups as $group) {
+            $parentProductIds = $this->resolveGroupParentProductIds($group);
+            if (empty($parentProductIds)) {
+                continue;
+            }
+
             $items = [];
 
             foreach ($group->getProducts() as $groupProduct) {
@@ -326,13 +331,7 @@ class ProductMenuService
                     continue;
                 }
 
-                $parentProduct = $groupProduct->getProduct();
-                if (!$parentProduct instanceof Product) {
-                    continue;
-                }
-
                 $items[] = [
-                    'parentProductId' => $parentProduct->getId(),
                     'id' => $childProduct->getId(),
                     'name' => trim((string) $childProduct->getProduct()),
                     'description' => $this->normalizeDescription($childProduct->getDescription()),
@@ -346,18 +345,12 @@ class ProductMenuService
                 continue;
             }
 
-            foreach ($this->splitGroupItemsByParentProduct($items) as $parentProductId => $parentItems) {
+            foreach ($parentProductIds as $parentProductId) {
                 $groupedProducts[$parentProductId][] = [
                     'id' => $group->getId(),
                     'name' => trim((string) $group->getProductGroup()),
                     'meta' => $this->buildGroupMeta($group),
-                    'items' => array_map(
-                        static function (array $item): array {
-                            unset($item['parentProductId']);
-                            return $item;
-                        },
-                        $parentItems
-                    ),
+                    'items' => $items,
                 ];
             }
         }
@@ -366,24 +359,28 @@ class ProductMenuService
     }
 
     /**
-     * @param array<int, array<string, mixed>> $items
-     *
-     * @return array<int, array<int, array<string, mixed>>>
+     * @return array<int, int>
      */
-    private function splitGroupItemsByParentProduct(array $items): array
+    private function resolveGroupParentProductIds(ProductGroup $group): array
     {
-        $grouped = [];
+        $parentProductIds = [];
 
-        foreach ($items as $item) {
-            $parentProductId = (int) ($item['parentProductId'] ?? 0);
-            if ($parentProductId <= 0) {
+        foreach ($group->getParentProducts() as $groupParent) {
+            if (!$groupParent instanceof \ControleOnline\Entity\ProductGroupParent || !$groupParent->isActive()) {
                 continue;
             }
 
-            $grouped[$parentProductId][] = $item;
+            $parentProduct = $groupParent->getParentProduct();
+            if ($parentProduct instanceof Product) {
+                $parentProductIds[] = (int) $parentProduct->getId();
+            }
         }
 
-        return $grouped;
+        if (empty($parentProductIds) && $group->getParentProduct() instanceof Product) {
+            $parentProductIds[] = (int) $group->getParentProduct()->getId();
+        }
+
+        return array_values(array_unique(array_filter($parentProductIds)));
     }
 
     /**

@@ -42,11 +42,12 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
         }
 
         $directFeedstocks = $this->findFeedstocksForProduct($mainProduct, null);
-        $groupItems = $this->findGroupItemsForProduct($mainProduct, $productGroupId);
+        $groupRepository = $this->manager->getRepository(ProductGroup::class);
+        $groupItems = $groupRepository->findGroupsForProduct($mainProduct, $productGroupId, false);
         $groupItemCosts = $this->buildGroupItemCosts($groupItems);
 
-        $requiredGroups = $this->findRequiredGroupsForProduct($mainProduct, $productGroupId);
-        $groupsSummary = $this->buildRequiredGroupsSummary($requiredGroups, $groupItems, $groupItemCosts);
+        $requiredGroups = $groupRepository->findGroupsForProduct($mainProduct, $productGroupId, true);
+        $groupsSummary = $this->buildRequiredGroupsSummary($requiredGroups, $groupItemCosts);
 
         return [
             'scope' => [
@@ -89,128 +90,55 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
     }
 
     /**
-     * @return ProductGroupProduct[]
+     * @param ProductGroup[] $groups
      */
-    private function findGroupItemsForProduct(Product $product, ?int $productGroupId = null): array
-    {
-        $items = $this->manager->getRepository(ProductGroupProduct::class)->findBy(
-            [
-                'product' => $product,
-                'active' => true,
-            ],
-            ['id' => 'ASC']
-        );
-
-        $items = array_values(array_filter(
-            $items,
-            static fn(ProductGroupProduct $item): bool => 'feedstock' !== $item->getProductType()
-        ));
-
-        if ($productGroupId) {
-            $items = array_values(array_filter(
-                $items,
-                static fn(ProductGroupProduct $item): bool => $productGroupId === $item->getProductGroup()?->getId()
-            ));
-        }
-
-        usort($items, static function (ProductGroupProduct $left, ProductGroupProduct $right): int {
-            $leftGroup = $left->getProductGroup();
-            $rightGroup = $right->getProductGroup();
-
-            $leftOrder = $leftGroup?->getGroupOrder() ?? 0;
-            $rightOrder = $rightGroup?->getGroupOrder() ?? 0;
-            if ($leftOrder !== $rightOrder) {
-                return $leftOrder <=> $rightOrder;
-            }
-
-            $leftLabel = $leftGroup?->getProductGroup() ?? '';
-            $rightLabel = $rightGroup?->getProductGroup() ?? '';
-            if ($leftLabel !== $rightLabel) {
-                return $leftLabel <=> $rightLabel;
-            }
-
-            return ($left->getId() ?? 0) <=> ($right->getId() ?? 0);
-        });
-
-        return $items;
-    }
-
-    /**
-     * @return ProductGroup[]
-     */
-    private function findRequiredGroupsForProduct(Product $product, ?int $productGroupId = null): array
-    {
-        $criteria = [
-            'parentProduct' => $product,
-            'required' => true,
-            'active' => true,
-        ];
-
-        if ($productGroupId) {
-            $criteria['id'] = $productGroupId;
-        }
-
-        return $this->manager->getRepository(ProductGroup::class)->findBy(
-            $criteria,
-            ['groupOrder' => 'ASC', 'productGroup' => 'ASC']
-        );
-    }
-
-    private function buildGroupItemCosts(array $groupItems): array
+    private function buildGroupItemCosts(array $groups): array
     {
         $costs = [];
         $feedstocksByGroupAndProduct = [];
 
-        foreach ($groupItems as $groupItem) {
-            $group = $groupItem->getProductGroup();
-            $child = $groupItem->getProductChild();
-            $itemId = $this->normalizeId($groupItem);
+        foreach ($groups as $group) {
+            foreach ($this->resolveGroupItems($group) as $groupItem) {
+                $groupEntity = $groupItem->getProductGroup();
+                $child = $groupItem->getProductChild();
+                $itemId = $this->normalizeId($groupItem);
 
-            if (!$group instanceof ProductGroup || !$child instanceof Product || !$itemId) {
-                continue;
+                if (!$groupEntity instanceof ProductGroup || !$child instanceof Product || !$itemId) {
+                    continue;
+                }
+
+                $groupId = $groupEntity->getId();
+                $childId = $child->getId();
+                $cacheKey = sprintf('%s:%s', $groupId, $childId);
+
+                if (!array_key_exists($cacheKey, $feedstocksByGroupAndProduct)) {
+                    $feedstocksByGroupAndProduct[$cacheKey] = $this->findFeedstocksForProduct($child, $groupEntity);
+                }
+
+                $feedstocks = $feedstocksByGroupAndProduct[$cacheKey];
+                $costs[(string) $itemId] = [
+                    'itemId' => (string) $itemId,
+                    'cost' => $this->sumFeedstockPrices($feedstocks),
+                    'hasFeedstocks' => [] !== $feedstocks,
+                ];
             }
-
-            $groupId = $group->getId();
-            $childId = $child->getId();
-            $cacheKey = sprintf('%s:%s', $groupId, $childId);
-
-            if (!array_key_exists($cacheKey, $feedstocksByGroupAndProduct)) {
-                $feedstocksByGroupAndProduct[$cacheKey] = $this->findFeedstocksForProduct($child, $group);
-            }
-
-            $feedstocks = $feedstocksByGroupAndProduct[$cacheKey];
-            $costs[(string) $itemId] = [
-                'itemId' => (string) $itemId,
-                'cost' => $this->sumFeedstockPrices($feedstocks),
-                'hasFeedstocks' => [] !== $feedstocks,
-            ];
         }
 
         return $costs;
     }
 
-    private function buildRequiredGroupsSummary(array $requiredGroups, array $groupItems, array $groupItemCosts): array
+    /**
+     * @param ProductGroup[] $requiredGroups
+     */
+    private function buildRequiredGroupsSummary(array $requiredGroups, array $groupItemCosts): array
     {
-        $itemsByGroupId = [];
-
-        foreach ($groupItems as $groupItem) {
-            $groupId = $this->normalizeId($groupItem->getProductGroup());
-            if (!$groupId) {
-                continue;
-            }
-
-            $itemsByGroupId[$groupId][] = $groupItem;
-        }
-
         $summary = [];
 
         foreach ($requiredGroups as $group) {
-            $groupId = (string) $group->getId();
-            $items = $itemsByGroupId[$groupId] ?? [];
             $selected = null;
             $selectedFeedstocks = [];
 
-            foreach ($items as $item) {
+            foreach ($this->resolveGroupItems($group) as $item) {
                 $itemId = $this->normalizeId($item);
                 if (!$itemId) {
                     continue;
@@ -244,6 +172,37 @@ class ProductPricingCollectionSummaryResolver implements CollectionSummaryResolv
         }
 
         return $summary;
+    }
+
+    /**
+     * @return ProductGroupProduct[]
+     */
+    private function resolveGroupItems(ProductGroup $group): array
+    {
+        $items = [];
+
+        foreach ($group->getProducts() as $groupProduct) {
+            if (!$groupProduct instanceof ProductGroupProduct) {
+                continue;
+            }
+
+            if (!$groupProduct->isActive() || $groupProduct->getProductType() === 'feedstock') {
+                continue;
+            }
+
+            $childProduct = $groupProduct->getProductChild();
+            if (!$childProduct instanceof Product || !$childProduct->isActive()) {
+                continue;
+            }
+
+            $items[] = $groupProduct;
+        }
+
+        usort($items, static function (ProductGroupProduct $left, ProductGroupProduct $right): int {
+            return ($left->getId() ?? 0) <=> ($right->getId() ?? 0);
+        });
+
+        return $items;
     }
 
     private function normalizeFeedstock(ProductGroupProduct $feedstock): array

@@ -10,6 +10,7 @@ use ControleOnline\Repository\ProductGroupProductRepository;
 use ControleOnline\Repository\ProductGroupRepository;
 use ControleOnline\Repository\ProductRepository;
 use ControleOnline\Service\ProductPricingCollectionSummaryResolver;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -38,17 +39,29 @@ class ProductPricingCollectionSummaryResolverTest extends TestCase
         $expensiveFeedstock = $this->mockGroupProduct(6, $expensiveOptionProduct, $requiredGroup, 'feedstock', $this->mockProduct(4002, 'Linguica', 'feedstock'), 1, 8.25);
         $optionalFeedstock = $this->mockGroupProduct(7, $optionalOptionProduct, $optionalGroup, 'feedstock', $this->mockProduct(4003, 'Bacon', 'feedstock'), 1, 2.1);
 
+        $requiredGroup->method('getProducts')->willReturn(new ArrayCollection([$cheapOption, $expensiveOption]));
+        $optionalGroup->method('getProducts')->willReturn(new ArrayCollection([$optionalOption]));
+
         $productRepository = $this->createMock(ProductRepository::class);
         $productRepository->method('find')->with(1343)->willReturn($mainProduct);
 
         $groupRepository = $this->createMock(ProductGroupRepository::class);
-        $groupRepository->method('findBy')->willReturnCallback(
-            static function (array $criteria) use ($mainProduct, $requiredGroup, $optionalGroup): array {
-                if (($criteria['parentProduct'] ?? null) === $mainProduct && true === ($criteria['required'] ?? null)) {
+        $groupRepository->method('findGroupsForProduct')->willReturnCallback(
+            static function (Product $product, ?int $productGroupId, bool $requiredOnly) use ($requiredGroup, $optionalGroup): array {
+                if ($productGroupId !== null) {
+                    $groups = array_filter(
+                        [$requiredGroup, $optionalGroup],
+                        static fn(ProductGroup $group): bool => $group->getId() === $productGroupId
+                    );
+
+                    return array_values($groups);
+                }
+
+                if ($requiredOnly) {
                     return [$requiredGroup];
                 }
 
-                return [];
+                return [$requiredGroup, $optionalGroup];
             }
         );
 
@@ -125,6 +138,7 @@ class ProductPricingCollectionSummaryResolverTest extends TestCase
         $product->method('getId')->willReturn($id);
         $product->method('getProduct')->willReturn($name);
         $product->method('getType')->willReturn($type);
+        $product->method('isActive')->willReturn(true);
 
         return $product;
     }
@@ -157,6 +171,7 @@ class ProductPricingCollectionSummaryResolverTest extends TestCase
         $item->method('getProductChild')->willReturn($child);
         $item->method('getQuantity')->willReturn($quantity);
         $item->method('getPrice')->willReturn($price);
+        $item->method('isActive')->willReturn(true);
 
         return $item;
     }

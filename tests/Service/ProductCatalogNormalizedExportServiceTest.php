@@ -152,6 +152,34 @@ class ProductCatalogNormalizedExportServiceTest extends TestCase
         self::assertSame('', $secondRow['ifood_item_id']);
     }
 
+    public function testBuildNormalizedCatalogCsvUsesSharedJoin(): void
+    {
+        $company = $this->createMock(People::class);
+        $company->method('getId')->willReturn(7);
+        $company->method('getAlias')->willReturn('Empresa 3');
+        $company->method('getName')->willReturn('Empresa Compartilhada');
+
+        $connection = $this->createMock(Connection::class);
+        $connection->expects(self::once())
+            ->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql, array $params): array {
+                self::assertStringContainsString('ON pgp.product_group_id = pg.id', $sql);
+                self::assertStringNotContainsString('pgp.product_id = parent.id', $sql);
+                self::assertSame(7, $params['companyId']);
+
+                return [];
+            });
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('getConnection')->willReturn($connection);
+
+        $service = new ProductCatalogNormalizedExportService($entityManager);
+        $csv = $service->buildNormalizedCatalogCsv($company, 'products');
+
+        self::assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        self::assertStringContainsString('category_id', $csv);
+    }
+
     public function testBuildNormalizedCatalogFilenameSlugifiesCompanyName(): void
     {
         $company = $this->createMock(People::class);

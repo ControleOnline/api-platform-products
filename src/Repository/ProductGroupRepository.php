@@ -48,6 +48,73 @@ class ProductGroupRepository extends ServiceEntityRepository
         }
     }
 
+    public function findSharedByNameAndCompany(string $groupName, Product $parentProduct): ?ProductGroup
+    {
+        $qb = $this->createQueryBuilder('productGroup');
+        $qb->leftJoin('productGroup.parentProducts', 'groupParent')
+            ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
+            ->leftJoin('productGroup.parentProduct', 'legacyParentProduct')
+            ->andWhere('productGroup.productGroup = :groupName')
+            ->andWhere($qb->expr()->orX(
+                $qb->expr()->andX(
+                    'groupParent.active = true',
+                    'groupParentProduct.company = :company'
+                ),
+                'legacyParentProduct.company = :company'
+            ))
+            ->setParameter('groupName', $groupName)
+            ->setParameter('company', $parentProduct->getCompany())
+            ->orderBy('productGroup.id', 'ASC')
+            ->setMaxResults(1);
+
+        return $qb->getQuery()->getOneOrNullResult();
+    }
+
+    /**
+     * @return ProductGroup[]
+     */
+    public function findGroupsForProduct(Product $product, ?int $productGroupId = null, bool $requiredOnly = false): array
+    {
+        $qb = $this->createQueryBuilder('productGroup')
+            ->distinct()
+            ->leftJoin('productGroup.parentProducts', 'groupParent')
+            ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
+            ->leftJoin('productGroup.parentProduct', 'legacyParentProduct')
+            ->leftJoin(
+                'productGroup.products',
+                'groupProduct',
+                'WITH',
+                'groupProduct.active = true'
+            )
+            ->leftJoin('groupProduct.productChild', 'childProduct')
+            ->addSelect('groupParent', 'groupParentProduct', 'legacyParentProduct', 'groupProduct', 'childProduct')
+            ->andWhere('productGroup.active = true');
+
+        $qb->andWhere($qb->expr()->orX(
+            $qb->expr()->andX(
+                'groupParent.active = true',
+                'groupParentProduct = :product'
+            ),
+            'legacyParentProduct = :product',
+            'groupProduct.product = :product'
+        ));
+
+        if ($requiredOnly) {
+            $qb->andWhere('productGroup.required = true');
+        }
+
+        if (null !== $productGroupId) {
+            $qb->andWhere('productGroup.id = :productGroupId')
+                ->setParameter('productGroupId', $productGroupId);
+        }
+
+        return $qb->setParameter('product', $product)
+            ->orderBy('productGroup.groupOrder', 'ASC')
+            ->addOrderBy('productGroup.productGroup', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * @param Product[] $products
      * @param int[] $hiddenGroupIds
@@ -63,34 +130,40 @@ class ProductGroupRepository extends ServiceEntityRepository
             return [];
         }
 
+        $productIds = array_map(
+            static fn(Product $product): int => (int) $product->getId(),
+            $products
+        );
         $qb = $this->createQueryBuilder('productGroup')
-            ->addSelect('groupProduct', 'childProduct')
+            ->addSelect('groupParent', 'groupParentProduct', 'groupProduct', 'childProduct')
             ->distinct()
-            ->leftJoin(
-                'productGroup.parentProducts',
-                'groupParent',
-                'WITH',
-                'groupParent.active = true'
-            )
-            ->leftJoin(
-                'productGroup.products',
-                'groupProduct',
-                'WITH',
-                'groupProduct.active = true AND groupProduct.productType = :productType AND groupProduct.product IN (:products)'
-            )
-            ->leftJoin('groupProduct.productChild', 'childProduct')
             ->andWhere('productGroup.active = true')
-            ->setParameter('products', $products)
+            ->setParameter('productIds', $productIds)
             ->setParameter('productType', $componentType)
             ->orderBy('productGroup.groupOrder', 'ASC')
             ->addOrderBy('productGroup.productGroup', 'ASC')
             ->addOrderBy('childProduct.product', 'ASC');
 
-        $qb->andWhere($qb->expr()->orX(
-            'productGroup.parentProduct IN (:products)',
-            'groupParent.parentProduct IN (:products)',
-            'groupProduct.product IN (:products)'
-        ));
+        $qb
+            ->leftJoin(
+                'productGroup.parentProducts',
+                'groupParent',
+                'WITH',
+                'groupParent.active = true AND IDENTITY(groupParent.parentProduct) IN (:productIds)'
+            )
+            ->leftJoin('groupParent.parentProduct', 'groupParentProduct')
+            ->leftJoin(
+                'productGroup.products',
+                'groupProduct',
+                'WITH',
+                'groupProduct.active = true AND groupProduct.productType = :productType'
+            )
+            ->leftJoin('groupProduct.productChild', 'childProduct')
+            ->andWhere($qb->expr()->orX(
+                'IDENTITY(productGroup.parentProduct) IN (:productIds)',
+                'IDENTITY(groupParentProduct) IN (:productIds)',
+                'IDENTITY(groupProduct.product) IN (:productIds)'
+            ));
 
         if (!empty($hiddenGroupIds)) {
             $qb->andWhere('productGroup.id NOT IN (:hiddenGroupIds)')

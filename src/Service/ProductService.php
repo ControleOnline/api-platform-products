@@ -646,15 +646,7 @@ class ProductService
     private function resolveImportGroup(Product $parentProduct, array $data): ProductGroup
     {
         $group = $this->manager->getRepository(ProductGroup::class)
-            ->createQueryBuilder('productGroup')
-            ->leftJoin('productGroup.parentProducts', 'groupParent')
-            ->andWhere('productGroup.productGroup = :groupName')
-            ->andWhere('productGroup.parentProduct = :parentProduct OR groupParent.parentProduct = :parentProduct')
-            ->setParameter('groupName', $data['group_name'])
-            ->setParameter('parentProduct', $parentProduct)
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+            ->findSharedByNameAndCompany($data['group_name'], $parentProduct);
 
         $isNew = !$group instanceof ProductGroup;
 
@@ -730,14 +722,9 @@ class ProductService
 
     private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void
     {
-        $link = $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
-            'product' => $parentProduct,
-            'productGroup' => $group,
-            'productChild' => $item,
-        ]) ?: $this->manager->getRepository(ProductGroupProduct::class)->findOneBy([
-            'productGroup' => $group,
-            'productChild' => $item,
-        ]);
+        $productType = $data['item_product_type'] ?? null;
+        $groupProductRepository = $this->manager->getRepository(ProductGroupProduct::class);
+        $link = $groupProductRepository->findSharedGroupItem($group, $item, $productType);
 
         if (!$link instanceof ProductGroupProduct) {
             $link = new ProductGroupProduct();
@@ -751,9 +738,8 @@ class ProductService
             $this->manager->persist($link);
         }
 
-        $itemProductType = $data['item_product_type'] ?? null;
-        if ($itemProductType !== null) {
-            $link->setProductType($itemProductType);
+        if ($productType !== null) {
+            $link->setProductType($productType);
         }
 
         $itemQuantity = $this->parseNullableFloat($data['item_quantity'] ?? null, 'item_quantity');

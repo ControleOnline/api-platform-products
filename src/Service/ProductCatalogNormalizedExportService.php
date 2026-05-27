@@ -114,6 +114,7 @@ class ProductCatalogNormalizedExportService
             'companyId' => (int) $company->getId(),
             'categoryContext' => $normalizedContext,
         ];
+        $groupProductJoinCondition = 'pgp.product_group_id = pg.id';
 
         $baseSelects = [
             'cat.id AS category_id',
@@ -264,16 +265,15 @@ LEFT JOIN product_category pc ON pc.id = (
     WHERE pc2.product_id = parent.id
       AND c2.context = :categoryContext
 )
-LEFT JOIN category cat ON cat.id = pc.category_id
-LEFT JOIN category cat_parent ON cat_parent.id = cat.parent_id
-LEFT JOIN product_group_product pgp
-    ON pgp.product_group_id = pg.id
-   AND pgp.product_id = parent.id
-LEFT JOIN product child
-    ON child.id = pgp.product_child_id
-LEFT JOIN product_unity child_unit
-    ON child_unit.id = child.product_unity_id
-%s
+	LEFT JOIN category cat ON cat.id = pc.category_id
+	LEFT JOIN category cat_parent ON cat_parent.id = cat.parent_id
+	LEFT JOIN product_group_product pgp
+	    ON %s
+	LEFT JOIN product child
+	    ON child.id = pgp.product_child_id
+	LEFT JOIN product_unity child_unit
+	    ON child_unit.id = child.product_unity_id
+	%s
 WHERE parent.company_id = :companyId
 ORDER BY
     COALESCE(cat_parent.name, '') ASC,
@@ -286,6 +286,7 @@ ORDER BY
 SQL,
             implode(",\n    ", $baseSelects),
             implode(",\n    ", $extraSelects),
+            $groupProductJoinCondition,
             implode("\n", $extraJoins)
         );
 
