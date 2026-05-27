@@ -88,7 +88,7 @@ class ProductGroup
     private $parentProducts;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
-    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id', nullable: false)]
     #[ORM\ManyToOne(targetEntity: People::class)]
     #[Groups(['product_group:read', 'product_group:write'])]
     private $company;
