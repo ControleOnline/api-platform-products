@@ -54,10 +54,7 @@ class ProductGroupService
     {
         if ($product = $this->normalizeReferenceId($this->request->query->get('product', null))) {
             $queryBuilder->leftJoin(sprintf('%s.parentProducts', $rootAlias), 'productGroupParentFilter');
-            $queryBuilder->andWhere($queryBuilder->expr()->orX(
-                sprintf('IDENTITY(%s.parentProduct) = :productGroupParentProduct', $rootAlias),
-                'IDENTITY(productGroupParentFilter.parentProduct) = :productGroupParentProduct'
-            ));
+            $queryBuilder->andWhere('IDENTITY(productGroupParentFilter.parentProduct) = :productGroupParentProduct');
             $queryBuilder->andWhere(sprintf('%s.active = true', $rootAlias));
             $queryBuilder->setParameter('productGroupParentProduct', $product);
             $queryBuilder->distinct();

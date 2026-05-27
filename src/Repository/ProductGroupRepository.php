@@ -148,10 +148,7 @@ class ProductGroupRepository extends ServiceEntityRepository
                 'groupProduct.active = true AND groupProduct.productType IN (:productTypes)'
             )
             ->leftJoin('groupProduct.productChild', 'childProduct')
-            ->andWhere($qb->expr()->orX(
-                'IDENTITY(productGroup.parentProduct) IN (:productIds)',
-                'IDENTITY(groupParentProduct) IN (:productIds)'
-            ));
+            ->andWhere('IDENTITY(groupParentProduct) IN (:productIds)');
 
         if (!empty($hiddenGroupIds)) {
             $qb->andWhere('productGroup.id NOT IN (:hiddenGroupIds)')
