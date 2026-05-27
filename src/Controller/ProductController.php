@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Spool;
+use ControleOnline\Service\ProductCatalogNormalizedExportService;
 use ControleOnline\Service\HydratorService;
 use ControleOnline\Service\ProductMenuService;
 use ControleOnline\Service\RequestPayloadService;
@@ -23,6 +24,7 @@ class ProductController extends AbstractController
     public function __construct(
         private ProductService $productService,
         private ProductMenuService $productMenuService,
+        private ProductCatalogNormalizedExportService $productCatalogNormalizedExportService,
         private HydratorService $hydratorService,
         private RequestPayloadService $requestPayloadService
 
@@ -150,6 +152,52 @@ class ProductController extends AbstractController
             $filename = $this->productMenuService->buildCatalogFilename($company);
             $response = new Response($pdf, Response::HTTP_OK, [
                 'Content-Type' => 'application/pdf',
+            ]);
+
+            $response->headers->set(
+                'Content-Disposition',
+                HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename)
+            );
+
+            return $response;
+        } catch (\Throwable $exception) {
+            return new JsonResponse(
+                ['error' => $exception->getMessage()],
+                $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                    ? $exception->getStatusCode()
+                    : Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    #[Route('/products/catalog/download-normalized', name: 'product_catalog_download_normalized', methods: ['GET'])]
+    #[Security("is_granted('ROLE_HUMAN')")]
+    public function downloadNormalizedCatalog(Request $request): Response
+    {
+        $companyReference = trim((string) $request->get('company'));
+        $context = trim((string) $request->get('context'));
+
+        if ($companyReference === '') {
+            return new JsonResponse(
+                ['error' => 'Parametro obrigatorio: company'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $company = $this->productService->resolveCompanyReference($companyReference);
+
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa nao encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $csv = $this->productCatalogNormalizedExportService->buildNormalizedCatalogCsv(
+                $company,
+                $context
+            );
+            $filename = $this->productCatalogNormalizedExportService->buildNormalizedCatalogFilename($company);
+            $response = new Response($csv, Response::HTTP_OK, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
             ]);
 
             $response->headers->set(
