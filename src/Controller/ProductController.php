@@ -15,18 +15,25 @@ use ControleOnline\Service\HydratorService;
 use ControleOnline\Service\ProductMenuService;
 use ControleOnline\Service\RequestPayloadService;
 use ControleOnline\Service\ProductService;
+use ControleOnline\Repository\ProductCategoryRepository;
+use ControleOnline\Repository\ProductGroupRepository;
 use Exception;
 use Symfony\Component\Security\Http\Attribute\Security;
 use ControleOnline\Entity\Product;
 
 class ProductController extends AbstractController
 {
+    private const SHOP_CATALOG_DEFAULT_PRODUCT_TYPES = ['product', 'manufactured', 'custom', 'service'];
+    private const SHOP_CATALOG_GROUP_MODIFIER_TYPES = ['component', 'package'];
+
     public function __construct(
         private ProductService $productService,
         private ProductMenuService $productMenuService,
         private ProductCatalogNormalizedExportService $productCatalogNormalizedExportService,
         private HydratorService $hydratorService,
-        private RequestPayloadService $requestPayloadService
+        private RequestPayloadService $requestPayloadService,
+        private ProductCategoryRepository $productCategoryRepository,
+        private ProductGroupRepository $productGroupRepository
 
     ) {}
 
@@ -170,6 +177,84 @@ class ProductController extends AbstractController
         }
     }
 
+    #[Route('/products/shop-catalog', name: 'products_shop_catalog', methods: ['GET'])]
+    #[Security("is_granted('PUBLIC_ACCESS')")]
+    public function getShopCatalog(Request $request): JsonResponse
+    {
+        $companyReference = trim((string) $request->get('company'));
+        $context = trim((string) ($request->get('context') ?: 'products'));
+
+        if ($companyReference === '') {
+            return new JsonResponse(
+                ['error' => 'Parametro obrigatorio: company'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $company = $this->productService->resolveCompanyReference($companyReference);
+
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa nao encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
+        $productTypes = $this->normalizeShopCatalogProductTypes($request);
+        $productCategories = $this->productCategoryRepository->findVisibleForMenuCatalog(
+            $company,
+            $context !== '' ? $context : 'products',
+            $productTypes
+        );
+
+        $productsById = [];
+        foreach ($productCategories as $productCategory) {
+            $product = $productCategory->getProduct();
+            if ($product instanceof Product) {
+                $productsById[(int) $product->getId()] = $product;
+            }
+        }
+
+        $customizationProductIds = $this->resolveShopCatalogCustomizationProductIds(
+            $this->productGroupRepository->findVisibleComponentGroupsForMenuCatalog(
+                array_values($productsById),
+                self::SHOP_CATALOG_GROUP_MODIFIER_TYPES
+            )
+        );
+
+        $categoriesById = [];
+        $productsByCategoryId = [];
+
+        foreach ($productCategories as $productCategory) {
+            $category = $productCategory->getCategory();
+            $product = $productCategory->getProduct();
+            $categoryId = (string) $category->getId();
+            $productId = (int) $product->getId();
+
+            if (!isset($categoriesById[$categoryId])) {
+                $categoryPayload = $this->hydratorService->data($category, 'category:read');
+                $categoryPayload->productCount = 0;
+                $categoriesById[$categoryId] = $categoryPayload;
+                $productsByCategoryId[$categoryId] = [];
+            }
+
+            $productPayload = $this->hydratorService->data($product, 'product:read');
+            $productPayload->{'@id'} = $productPayload->{'@id'} ?? '/products/' . $productId;
+            $productPayload->hasCustomizationGroups = isset($customizationProductIds[$productId]);
+            $productPayload->customizationGroupsLoaded = true;
+
+            $productsByCategoryId[$categoryId][] = $productPayload;
+            $categoriesById[$categoryId]->productCount++;
+        }
+
+        return new JsonResponse([
+            '@context' => '/contexts/ShopCatalog',
+            '@id' => '/products/shop-catalog',
+            '@type' => 'ShopCatalog',
+            'categories' => array_values($categoriesById),
+            'productsByCategoryId' => $productsByCategoryId,
+            'categoryCount' => count($categoriesById),
+            'productCount' => count($productsById),
+        ]);
+    }
+
     #[Route('/products/catalog/download-normalized', name: 'product_catalog_download_normalized', methods: ['GET'])]
     #[Security("is_granted('ROLE_HUMAN')")]
     public function downloadNormalizedCatalog(Request $request): Response
@@ -220,5 +305,42 @@ class ProductController extends AbstractController
     public function teste(): JsonResponse
     {
         return new JsonResponse(['message' => 'rota funcionando']);
+    }
+
+    private function normalizeShopCatalogProductTypes(Request $request): array
+    {
+        $query = $request->query->all();
+        $rawTypes = $query['type'] ?? self::SHOP_CATALOG_DEFAULT_PRODUCT_TYPES;
+
+        if (!is_array($rawTypes)) {
+            $rawTypes = explode(',', (string) $rawTypes);
+        }
+
+        $types = array_values(array_filter(
+            array_map(static fn($type): string => trim((string) $type), $rawTypes),
+            static fn(string $type): bool => $type !== ''
+        ));
+
+        return $types ?: self::SHOP_CATALOG_DEFAULT_PRODUCT_TYPES;
+    }
+
+    private function resolveShopCatalogCustomizationProductIds(array $groups): array
+    {
+        $productIds = [];
+
+        foreach ($groups as $group) {
+            foreach ($group->getParentProducts() as $groupParent) {
+                if (method_exists($groupParent, 'isActive') && !$groupParent->isActive()) {
+                    continue;
+                }
+
+                $parentProduct = $groupParent->getParentProduct();
+                if ($parentProduct instanceof Product) {
+                    $productIds[(int) $parentProduct->getId()] = true;
+                }
+            }
+        }
+
+        return $productIds;
     }
 }

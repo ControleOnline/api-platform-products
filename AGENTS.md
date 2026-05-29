@@ -9,7 +9,9 @@
 - Regras de venda e pedido pertencem a `orders`.
 - Regras de fila operacional de preparo pertencem a `queue`.
 - Os metadados de grupo de produto (`priceCalculation`, `required`, `minimum`, `maximum`) e a quantidade/preco padrao de `product_group_product` formam o contrato de catalogo consumido pela tela de customizacao no frontend. Mudancas nesses campos precisam manter a leitura previsivel para `CustomizeScreen`.
+- O endpoint publico de catalogo do shop deve entregar categorias, produtos por categoria e sinalizacao de grupos em lote para evitar uma requisicao de produtos por categoria no frontend.
 - `ProductGroup.showInDisplay` e um metadado operacional de visibilidade. O backend deve persistir o campo, os novos grupos devem nascer com `false` e a leitura de catalogo/preview precisa respeitar o valor salvo sem quebrar o agrupamento dos itens.
+- `extra_data` e `extra_fields` nao sao destino para novo estado de catalogo, sincronizacao ou configuracao de produto. O unico uso aceitavel e legado para IDs, chaves remotas e codigos que ainda nao tenham coluna ou tabela canonica; qualquer outro dado deve ser materializado na entidade dona e removido depois do backfill.
 
 ## Regras de seguranca e autorizacao
 - Entidade analisada: `Product`.

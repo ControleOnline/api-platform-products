@@ -33,9 +33,21 @@ class ProductCategoryRepository extends ServiceEntityRepository
         array $hiddenCategoryIds = []
     ): array {
         $qb = $this->createQueryBuilder('productCategory')
-            ->addSelect('category', 'product')
+            ->distinct()
+            ->addSelect(
+                'category',
+                'product',
+                'categoryFile',
+                'categoryFileData',
+                'productFile',
+                'productFileData'
+            )
             ->join('productCategory.category', 'category')
             ->join('productCategory.product', 'product')
+            ->leftJoin('category.categoryFiles', 'categoryFile')
+            ->leftJoin('categoryFile.file', 'categoryFileData')
+            ->leftJoin('product.productFiles', 'productFile')
+            ->leftJoin('productFile.file', 'productFileData')
             ->andWhere('category.company = :company')
             ->andWhere('category.context = :context')
             ->andWhere('product.company = :company')
