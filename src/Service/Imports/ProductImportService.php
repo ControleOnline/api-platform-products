@@ -35,6 +35,11 @@ class ProductImportService extends ImportCommon
         'item_active',
     ];
 
+    private const REQUIRED_CSV_HEADERS = [
+        'category_name',
+        'product_name',
+    ];
+
     public function __construct(
         private ProductService $productService
     ) {}
@@ -53,7 +58,12 @@ class ProductImportService extends ImportCommon
     {
         return [
             [
-                ...self::CSV_HEADERS,
+                ...array_map(
+                    fn(string $header): string => in_array($header, self::REQUIRED_CSV_HEADERS, true)
+                        ? $header . '*'
+                        : $header,
+                    self::CSV_HEADERS
+                ),
             ],
             [
                 'Lanches',
