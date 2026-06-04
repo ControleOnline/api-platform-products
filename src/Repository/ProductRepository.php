@@ -19,7 +19,7 @@ use Doctrine\ORM\Query\ResultSetMapping;
 class ProductRepository extends ServiceEntityRepository
 {
 
-    private $inventory_exclude_types = ['custom', 'component', 'manufactured'];
+    private $inventory_exclude_types = ['custom', 'component', 'manufactured', 'recipe'];
 
     public function __construct(
         private PeopleService $peopleService,
