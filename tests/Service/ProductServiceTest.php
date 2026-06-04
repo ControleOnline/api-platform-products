@@ -49,6 +49,21 @@ class ProductServiceTest extends TestCase
             'product_name' => 'Produto',
             'group_name' => 'Grupo',
             'group_price_calculation' => 'invalid',
+        ]); 
+    }
+
+    public function testValidateImportRowRejectsRecipeProductType(): void
+    {
+        $service = $this->createProductService();
+        $method = new ReflectionMethod(ProductService::class, 'validateImportRow');
+        $method->setAccessible(true);
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $method->invoke($service, [
+            'category_name' => 'Categoria',
+            'product_name' => 'Preparo',
+            'product_type' => 'recipe',
         ]);
     }
 
