@@ -84,7 +84,9 @@ class ProductGroup
     #[Groups(['product_group:write'])]
     private $products;
 
+    // Orders and displays need the parent product mapping so grouped items can resolve to their parent card.
     #[ORM\OneToMany(targetEntity: ProductGroupParent::class, mappedBy: 'productGroup', orphanRemoval: true)]
+    #[Groups(['product_group:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $parentProducts;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]
