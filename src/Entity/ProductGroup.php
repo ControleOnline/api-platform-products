@@ -43,12 +43,12 @@ class ProductGroup
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
     #[ORM\Column(name: 'product_group', type: 'string', length: 255, nullable: false)]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $productGroup;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
@@ -73,11 +73,11 @@ class ProductGroup
     private $active = true;
 
     #[ORM\Column(name: 'show_in_display', type: 'boolean', nullable: false, options: ['default' => '0'])]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $showInDisplay = false;
 
     #[ORM\Column(name: 'group_order', type: 'integer', nullable: false)]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $groupOrder = 0;
 
     #[ORM\OneToMany(targetEntity: ProductGroupProduct::class, mappedBy: 'productGroup', orphanRemoval: true)]
@@ -86,7 +86,7 @@ class ProductGroup
 
     // Orders and displays need the parent product mapping so grouped items can resolve to their parent card.
     #[ORM\OneToMany(targetEntity: ProductGroupParent::class, mappedBy: 'productGroup', orphanRemoval: true)]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
     private $parentProducts;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['company' => 'exact'])]

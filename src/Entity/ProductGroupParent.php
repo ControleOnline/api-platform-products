@@ -41,24 +41,24 @@ class ProductGroupParent
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
+    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order_conference:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact', 'productGroup.productGroup' => 'partial'])]
     #[ORM\JoinColumn(name: 'product_group_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     #[ORM\ManyToOne(targetEntity: ProductGroup::class, inversedBy: 'parentProducts')]
-    #[Groups(['product_group_parent:read', 'order:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
+    #[Groups(['product_group_parent:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
     private $productGroup;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['parentProduct' => 'exact', 'parentProduct.company' => 'exact'])]
     #[ORM\JoinColumn(name: 'parent_product_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
+    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order_conference:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
     private $parentProduct;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['active' => 'exact'])]
     #[ORM\Column(name: 'active', type: 'boolean', nullable: false, options: ['default' => '1'])]
-    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
+    #[Groups(['product_group_parent:read', 'order_product_queue:read', 'order_conference:read', 'order_details:read', 'order_product:read', 'product_group_parent:write'])]
     private $active = true;
 
     public function getId()
