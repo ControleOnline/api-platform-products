@@ -17,6 +17,8 @@ use ControleOnline\Service\RequestPayloadService;
 use ControleOnline\Service\ProductService;
 use ControleOnline\Repository\ProductCategoryRepository;
 use ControleOnline\Repository\ProductGroupRepository;
+use ControleOnline\Repository\ProductRepository;
+use ControleOnline\Repository\OrderRepository;
 use Exception;
 use Symfony\Component\Security\Http\Attribute\Security;
 use ControleOnline\Entity\Product;
@@ -33,8 +35,9 @@ class ProductController extends AbstractController
         private HydratorService $hydratorService,
         private RequestPayloadService $requestPayloadService,
         private ProductCategoryRepository $productCategoryRepository,
-        private ProductGroupRepository $productGroupRepository
-
+        private ProductGroupRepository $productGroupRepository,
+        private ProductRepository $productRepository,
+        private OrderRepository $orderRepository
     ) {}
 
     #[Route('/products/purchasing-suggestion', name: 'purchasing_suggestion', methods: ['GET'])]
@@ -125,6 +128,37 @@ class ProductController extends AbstractController
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/products/{id}/summary', name: 'product_summary', methods: ['GET'])]
+    #[Security("is_granted('ROLE_HUMAN')")]
+    public function getProductSummary(int $id, Request $request): JsonResponse
+    {
+        $query = $request->query->all();
+        $orderDate = is_array($query['orderDate'] ?? null) ? $query['orderDate'] : [];
+
+        try {
+            $product = $this->productRepository->find($id);
+            if (!$product instanceof Product) {
+                return new JsonResponse(['error' => 'Produto não encontrado.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $summary = $this->orderRepository->resolveProductSalesSummary(
+                $product,
+                is_string($orderDate['after'] ?? null) ? $orderDate['after'] : null,
+                is_string($orderDate['before'] ?? null) ? $orderDate['before'] : null,
+            );
+
+            return new JsonResponse([
+                'summary' => [
+                    'sales' => $summary,
+                ],
+            ]);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
