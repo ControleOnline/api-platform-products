@@ -60,7 +60,7 @@ class Product
     #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $product;
 
-    #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles'])]
+    #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles', 'queue'])]
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productFiles.file.fileType' => 'exact'])]
     #[ORM\OneToMany(targetEntity: ProductFile::class, mappedBy: 'product')]
     #[Groups(['product_inventory:read', 'product:read', 'orders-queue:read', 'product_category:read', 'order_details:read', 'order:write', 'order_product:read'])]
@@ -120,6 +120,7 @@ class Product
 
     #[ORM\JoinColumn(name: 'queue_id', referencedColumnName: 'id')]
     #[ORM\ManyToOne(targetEntity: Queue::class)]
+    #[ApiFilter(filterClass: SearchFilter::class, properties: ['queue' => 'exact'])]
     #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
     private $queue;
 
