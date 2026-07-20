@@ -75,7 +75,6 @@ WHERE ps.integration_key IN ('pos', 'shop')
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE IF EXISTS `product_showcase_item`');
-        $this->addSql('DROP TABLE IF EXISTS `product_showcase`');
+        return;
     }
 }
