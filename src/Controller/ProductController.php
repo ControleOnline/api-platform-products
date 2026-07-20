@@ -11,6 +11,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Spool;
 use ControleOnline\Service\ProductCatalogNormalizedExportService;
+use ControleOnline\Service\ProductShowcaseCatalogService;
 use ControleOnline\Service\HydratorService;
 use ControleOnline\Service\ProductMenuService;
 use ControleOnline\Service\RequestPayloadService;
@@ -27,11 +28,33 @@ class ProductController extends AbstractController
         private ProductService $productService,
         private ProductMenuService $productMenuService,
         private ProductCatalogNormalizedExportService $productCatalogNormalizedExportService,
+        private ProductShowcaseCatalogService $productShowcaseCatalogService,
         private HydratorService $hydratorService,
         private RequestPayloadService $requestPayloadService,
         private ProductRepository $productRepository,
         private OrderRepository $orderRepository
     ) {}
+
+    #[Route('/product-showcases/catalog', name: 'product_showcases_catalog', methods: ['GET'])]
+    #[Security("is_granted('PUBLIC_ACCESS')")]
+    public function getProductShowcaseCatalog(Request $request): JsonResponse
+    {
+        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        if (!$company instanceof People) {
+            return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
+        }
+
+        $integrationKey = trim((string) ($request->get('integration_key') ?? $request->get('integrationKey') ?? ''));
+        if ($integrationKey === '') {
+            return new JsonResponse(['error' => 'Parametro obrigatorio: integration_key'], Response::HTTP_BAD_REQUEST);
+        }
+
+        return new JsonResponse($this->productShowcaseCatalogService->buildCatalog(
+            $company,
+            $integrationKey,
+            $request->query->all()
+        ));
+    }
 
     #[Route('/products/purchasing-suggestion', name: 'purchasing_suggestion', methods: ['GET'])]
     #[Security("is_granted('ROLE_HUMAN')")]
