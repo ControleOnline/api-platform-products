@@ -46,20 +46,35 @@ class ProductShowcaseCatalogService
         $page = max(1, (int) ($filters['page'] ?? 1));
         $itemsPerPage = max(1, min(100, (int) ($filters['itemsPerPage'] ?? 50)));
 
+        // @agents Catalog source rule: use a configured showcase when it has usable items; an empty showcase falls back to active company products.
         if ($showcase instanceof ProductShowcase) {
             [$items, $totalItems] = $this->fetchShowcaseItems($showcase, $filters, $page, $itemsPerPage);
-            $members = array_map(
-                fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct($item),
-                $items
-            );
-        } else {
-            [$products, $totalItems] = $this->fetchFallbackProducts($company, $filters, $page, $itemsPerPage);
-            $members = array_map(
-                fn(Product $product): array => $this->buildFallbackCatalogProduct($product),
-                $products
-            );
+
+            if ($totalItems > 0 || $this->showcaseHasActiveCatalogItems($showcase)) {
+                $members = array_map(
+                    fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct($item),
+                    $items
+                );
+
+                return $this->buildCatalogPayload($members, $totalItems, $showcase, 'showcase');
+            }
         }
 
+        [$products, $totalItems] = $this->fetchFallbackProducts($company, $filters, $page, $itemsPerPage);
+        $members = array_map(
+            fn(Product $product): array => $this->buildFallbackCatalogProduct($product),
+            $products
+        );
+
+        return $this->buildCatalogPayload($members, $totalItems, null, 'product');
+    }
+
+    private function buildCatalogPayload(
+        array $members,
+        int $totalItems,
+        ?ProductShowcase $showcase,
+        string $source
+    ): array {
         return [
             '@id' => '/product-showcases/catalog',
             '@type' => 'Collection',
@@ -71,7 +86,7 @@ class ProductShowcaseCatalogService
                 'name' => $showcase->getName(),
                 'integrationKey' => $showcase->getIntegrationKey(),
             ] : null,
-            'source' => $showcase instanceof ProductShowcase ? 'showcase' : 'product',
+            'source' => $source,
         ];
     }
 
@@ -274,7 +289,10 @@ class ProductShowcaseCatalogService
             ->andWhere('item.showcase = :showcase')
             ->andWhere('item.active = true')
             ->andWhere('product.active = true')
-            ->setParameter('showcase', $showcase);
+            // @agents A showcase can only expose products owned by the same company as the showcase.
+            ->andWhere('product.company = :showcaseCompany')
+            ->setParameter('showcase', $showcase)
+            ->setParameter('showcaseCompany', $showcase->getCompany());
 
         $this->applyProductFilters($qb, $filters, 'product');
 
@@ -329,6 +347,13 @@ class ProductShowcaseCatalogService
             ->getResult();
 
         return [$products, $totalItems];
+    }
+
+    private function showcaseHasActiveCatalogItems(ProductShowcase $showcase): bool
+    {
+        return $this->manager
+            ->getRepository(ProductShowcaseItem::class)
+            ->hasActiveCatalogItems($showcase);
     }
 
     private function applyProductFilters(QueryBuilder $qb, array $filters, string $productAlias): void
