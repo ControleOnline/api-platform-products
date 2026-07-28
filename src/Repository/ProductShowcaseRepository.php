@@ -3,6 +3,7 @@
 namespace ControleOnline\Repository;
 
 use ControleOnline\Entity\People;
+use ControleOnline\Entity\PeopleDomain;
 use ControleOnline\Entity\ProductShowcase;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -27,6 +28,22 @@ class ProductShowcaseRepository extends ServiceEntityRepository
             ->andWhere('showcase.integrationKey = :integrationKey')
             ->andWhere('showcase.active = true')
             ->setParameter('company', $company)
+            ->setParameter('integrationKey', ProductShowcase::normalizeIntegrationKey($integrationKey))
+            ->orderBy('showcase.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findActiveForPeopleDomain(People $company, string $integrationKey, PeopleDomain $peopleDomain): ?ProductShowcase
+    {
+        return $this->createQueryBuilder('showcase')
+            ->andWhere('showcase.company = :company')
+            ->andWhere('showcase.peopleDomain = :peopleDomain')
+            ->andWhere('showcase.integrationKey = :integrationKey')
+            ->andWhere('showcase.active = true')
+            ->setParameter('company', $company)
+            ->setParameter('peopleDomain', $peopleDomain)
             ->setParameter('integrationKey', ProductShowcase::normalizeIntegrationKey($integrationKey))
             ->orderBy('showcase.id', 'ASC')
             ->setMaxResults(1)

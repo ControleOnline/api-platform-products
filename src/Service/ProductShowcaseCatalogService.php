@@ -6,10 +6,12 @@ use ControleOnline\Entity\DeviceConfig;
 use ControleOnline\Entity\Inventory;
 use ControleOnline\Entity\Order;
 use ControleOnline\Entity\People;
+use ControleOnline\Entity\PeopleDomain;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductInventory;
 use ControleOnline\Entity\ProductShowcase;
 use ControleOnline\Entity\ProductShowcaseItem;
+use ControleOnline\Repository\ProductShowcaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -22,6 +24,7 @@ class ProductShowcaseCatalogService
     public function __construct(
         private EntityManagerInterface $manager,
         private DeviceService $deviceService,
+        private DomainService $domainService,
         private RequestStack $requestStack
     ) {}
 
@@ -191,9 +194,36 @@ class ProductShowcaseCatalogService
             }
         }
 
-        return $this->manager
-            ->getRepository(ProductShowcase::class)
-            ->findDefaultActive($company, $normalizedIntegrationKey);
+        $repository = $this->manager->getRepository(ProductShowcase::class);
+        if (
+            $normalizedIntegrationKey === 'shop'
+            && $repository instanceof ProductShowcaseRepository
+        ) {
+            $domainShowcase = $this->resolveShopDomainShowcase($repository, $company);
+            if ($domainShowcase instanceof ProductShowcase) {
+                return $domainShowcase;
+            }
+        }
+
+        return $repository->findDefaultActive($company, $normalizedIntegrationKey);
+    }
+
+    private function resolveShopDomainShowcase(ProductShowcaseRepository $repository, People $company): ?ProductShowcase
+    {
+        try {
+            $peopleDomain = $this->domainService->getPeopleDomain();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (
+            !$peopleDomain instanceof PeopleDomain
+            || strtoupper(trim((string) $peopleDomain->getDomainType())) !== 'SHOP'
+        ) {
+            return null;
+        }
+
+        return $repository->findActiveForPeopleDomain($company, 'shop', $peopleDomain);
     }
 
     private function resolveDeviceShowcase(
