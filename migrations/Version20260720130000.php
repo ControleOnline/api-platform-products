@@ -11,7 +11,7 @@ final class Version20260720130000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create product showcases and showcase items for channel-specific catalog pricing.';
+        return 'Create product showcases and showcase items for channel-specific catalog pricing without tenant data backfill.';
     }
 
     public function up(Schema $schema): void
@@ -55,22 +55,6 @@ final class Version20260720130000 extends AbstractMigration
   CONSTRAINT `product_showcase_item_out_inventory_fk` FOREIGN KEY (`out_inventory_id`) REFERENCES `inventory` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 
-        $this->addSql("INSERT IGNORE INTO product_showcase (company_id, name, integration_key, active, settings)
-SELECT DISTINCT p.company_id, 'POS', 'pos', 1, JSON_OBJECT('source', 'backfill')
-FROM product p
-WHERE p.company_id IS NOT NULL");
-
-        $this->addSql("INSERT IGNORE INTO product_showcase (company_id, name, integration_key, active, settings)
-SELECT DISTINCT p.company_id, 'Shop', 'shop', 1, JSON_OBJECT('source', 'backfill')
-FROM product p
-WHERE p.company_id IS NOT NULL");
-
-        $this->addSql("INSERT IGNORE INTO product_showcase_item (showcase_id, product_id, out_inventory_id, price, active, published, settings)
-SELECT ps.id, p.id, p.default_out_inventory_id, p.price, p.active, 1, JSON_OBJECT('source', 'backfill')
-FROM product_showcase ps
-INNER JOIN product p ON p.company_id = ps.company_id
-WHERE ps.integration_key IN ('pos', 'shop')
-  AND p.type IN ('custom', 'product', 'manufactured', 'service')");
     }
 
     public function down(Schema $schema): void
