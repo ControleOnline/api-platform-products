@@ -33,6 +33,8 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ApiFilter(SearchFilter::class, properties: [
     'id' => 'exact',
     'company' => 'exact',
+    'peopleDomain' => 'exact',
+    'peopleDomain.domain' => 'exact',
     'integrationKey' => 'exact',
     'active' => 'exact',
     'name' => 'partial',
@@ -40,6 +42,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\Table(name: 'product_showcase')]
 #[ORM\UniqueConstraint(name: 'product_showcase_company_integration_name', columns: ['company_id', 'integration_key', 'name'])]
 #[ORM\Index(name: 'product_showcase_company_integration_active', columns: ['company_id', 'integration_key', 'active'])]
+#[ORM\Index(name: 'product_showcase_people_domain', columns: ['people_domain_id'])]
 #[ORM\Entity(repositoryClass: ProductShowcaseRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class ProductShowcase
@@ -54,6 +57,11 @@ class ProductShowcase
     #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id', nullable: false)]
     #[Groups(['product_showcase:read', 'product_showcase:write', 'product_showcase_item:read'])]
     private People $company;
+
+    #[ORM\ManyToOne(targetEntity: PeopleDomain::class)]
+    #[ORM\JoinColumn(name: 'people_domain_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['product_showcase:read', 'product_showcase:write', 'product_showcase_item:read'])]
+    private ?PeopleDomain $peopleDomain = null;
 
     #[ORM\Column(name: 'name', type: 'string', length: 120, nullable: false)]
     #[Groups(['product_showcase:read', 'product_showcase:write', 'product_showcase_item:read'])]
@@ -130,6 +138,17 @@ class ProductShowcase
     public function setCompany(People $company): self
     {
         $this->company = $company;
+        return $this;
+    }
+
+    public function getPeopleDomain(): ?PeopleDomain
+    {
+        return $this->peopleDomain;
+    }
+
+    public function setPeopleDomain(?PeopleDomain $peopleDomain): self
+    {
+        $this->peopleDomain = $peopleDomain;
         return $this;
     }
 
