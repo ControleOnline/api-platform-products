@@ -31,6 +31,24 @@ class ProductShowcaseItemRepository extends ServiceEntityRepository
         ]);
     }
 
+    public function hasActiveCatalogItems(ProductShowcase $showcase): bool
+    {
+        $totalItems = (int) $this->createQueryBuilder('item')
+            ->select('COUNT(item.id)')
+            ->join('item.product', 'product')
+            ->andWhere('item.showcase = :showcase')
+            ->andWhere('item.active = true')
+            ->andWhere('product.active = true')
+            // @agents Showcase catalog items must stay inside the showcase company boundary; product_id alone is not authorization.
+            ->andWhere('product.company = :company')
+            ->setParameter('showcase', $showcase)
+            ->setParameter('company', $showcase->getCompany())
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $totalItems > 0;
+    }
+
     /**
      * @return ProductShowcaseItem[]
      */
@@ -46,6 +64,8 @@ class ProductShowcaseItemRepository extends ServiceEntityRepository
             ->andWhere('showcase.active = true')
             ->andWhere('item.active = true')
             ->andWhere('product.active = true')
+            // @agents Showcase exports must never leak products from another company linked by a raw product_id.
+            ->andWhere('product.company = showcase.company')
             ->setParameter('company', $company)
             ->setParameter('integrationKey', ProductShowcase::normalizeIntegrationKey($integrationKey))
             ->orderBy('product.product', 'ASC')
