@@ -415,10 +415,14 @@ class ProductShowcaseCatalogService
                 ->setParameter('showcaseProductId', $productId);
         }
 
+        $productCategoryFilter = $filters['productCategory'] ?? null;
+        $categoryFilter = $filters['category']
+            ?? $filters['productCategory.category']
+            ?? (is_array($productCategoryFilter) ? ($productCategoryFilter['category'] ?? '') : '');
         $categoryId = (int) preg_replace(
             '/\D+/',
             '',
-            (string) ($filters['category'] ?? $filters['productCategory.category'] ?? '')
+            (string) $categoryFilter
         );
         if ($categoryId > 0) {
             $categoryIds = $this->resolveCategoryTreeIds($categoryId);
