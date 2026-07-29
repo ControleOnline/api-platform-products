@@ -54,8 +54,11 @@ class ProductShowcaseCatalogService
             [$items, $totalItems] = $this->fetchShowcaseItems($showcase, $filters, $page, $itemsPerPage);
 
             if ($totalItems > 0 || $this->showcaseHasActiveCatalogItems($showcase)) {
+                $customizationGroupFlags = $this->resolveCustomizationGroupFlags(
+                    array_map(fn(ProductShowcaseItem $item): Product => $item->getProduct(), $items)
+                );
                 $members = array_map(
-                    fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct($item),
+                    fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct($item, $customizationGroupFlags),
                     $items
                 );
 
@@ -64,8 +67,9 @@ class ProductShowcaseCatalogService
         }
 
         [$products, $totalItems] = $this->fetchFallbackProducts($company, $filters, $page, $itemsPerPage);
+        $customizationGroupFlags = $this->resolveCustomizationGroupFlags($products);
         $members = array_map(
-            fn(Product $product): array => $this->buildFallbackCatalogProduct($product),
+            fn(Product $product): array => $this->buildFallbackCatalogProduct($product, $customizationGroupFlags),
             $products
         );
 
@@ -401,15 +405,26 @@ class ProductShowcaseCatalogService
                 ->setParameter('showcaseProductSearch', '%' . $search . '%');
         }
 
+        $productId = (int) preg_replace(
+            '/\D+/',
+            '',
+            (string) ($filters['id'] ?? $filters['product.id'] ?? '')
+        );
+        if ($productId > 0) {
+            $qb->andWhere(sprintf('%s.id = :showcaseProductId', $productAlias))
+                ->setParameter('showcaseProductId', $productId);
+        }
+
         $categoryId = (int) preg_replace(
             '/\D+/',
             '',
             (string) ($filters['category'] ?? $filters['productCategory.category'] ?? '')
         );
         if ($categoryId > 0) {
+            $categoryIds = $this->resolveCategoryTreeIds($categoryId);
             $qb->join('ControleOnline\Entity\ProductCategory', 'showcaseProductCategory', 'WITH', sprintf('showcaseProductCategory.product = %s', $productAlias))
-                ->andWhere('showcaseProductCategory.category = :showcaseCategory')
-                ->setParameter('showcaseCategory', $categoryId);
+                ->andWhere('IDENTITY(showcaseProductCategory.category) IN (:showcaseCategoryIds)')
+                ->setParameter('showcaseCategoryIds', $categoryIds);
         }
 
         $requiresProductFile = (string) (
@@ -432,12 +447,46 @@ class ProductShowcaseCatalogService
         }
     }
 
-    private function buildShowcaseCatalogProduct(ProductShowcaseItem $item): array
+    /**
+     * @return int[]
+     */
+    private function resolveCategoryTreeIds(int $categoryId): array
+    {
+        $connection = $this->manager->getConnection();
+        $ids = [$categoryId];
+        $frontier = [$categoryId];
+
+        while ($frontier !== []) {
+            $children = $connection->fetchFirstColumn(
+                'SELECT id FROM category WHERE parent_id IN (:parentIds)',
+                ['parentIds' => $frontier],
+                ['parentIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+            );
+
+            $children = array_values(array_diff(
+                array_map('intval', $children),
+                $ids
+            ));
+            if ($children === []) {
+                break;
+            }
+
+            $ids = array_merge($ids, $children);
+            $frontier = $children;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    private function buildShowcaseCatalogProduct(ProductShowcaseItem $item, array $customizationGroupFlags = []): array
     {
         $product = $item->getProduct();
         $outInventory = $item->getOutInventory();
 
-        return array_merge($this->buildProductPayload($product), [
+        return array_merge($this->buildProductPayload(
+            $product,
+            !empty($customizationGroupFlags[(int) $product->getId()])
+        ), [
             'price' => $item->getPrice(),
             'outInventory' => $outInventory instanceof Inventory ? [
                 'id' => $outInventory->getId(),
@@ -463,11 +512,14 @@ class ProductShowcaseCatalogService
         ]);
     }
 
-    private function buildFallbackCatalogProduct(Product $product): array
+    private function buildFallbackCatalogProduct(Product $product, array $customizationGroupFlags = []): array
     {
         $outInventory = $product->getDefaultOutInventory();
 
-        return array_merge($this->buildProductPayload($product), [
+        return array_merge($this->buildProductPayload(
+            $product,
+            !empty($customizationGroupFlags[(int) $product->getId()])
+        ), [
             'outInventory' => $outInventory instanceof Inventory ? [
                 'id' => $outInventory->getId(),
                 '@id' => '/inventories/' . $outInventory->getId(),
@@ -482,7 +534,7 @@ class ProductShowcaseCatalogService
         ]);
     }
 
-    private function buildProductPayload(Product $product): array
+    private function buildProductPayload(Product $product, bool $hasCustomizationGroups = false): array
     {
         return [
             'id' => $product->getId(),
@@ -494,8 +546,47 @@ class ProductShowcaseCatalogService
             'price' => $product->getPrice(),
             'active' => $product->isActive(),
             'featured' => $product->getFeatured(),
+            'hasCustomizationGroups' => $hasCustomizationGroups,
+            'customizationGroupsLoaded' => true,
             'productFiles' => $this->buildProductFilesPayload($product),
         ];
+    }
+
+    /**
+     * @param Product[] $products
+     *
+     * @return array<int, bool>
+     */
+    private function resolveCustomizationGroupFlags(array $products): array
+    {
+        $productIds = array_values(array_unique(array_filter(array_map(
+            static fn(Product $product): int => (int) $product->getId(),
+            $products
+        ))));
+
+        if ($productIds === []) {
+            return [];
+        }
+
+        $rows = $this->manager->getConnection()->fetchFirstColumn(
+            <<<'SQL'
+SELECT DISTINCT product_group_parent.parent_product_id
+FROM product_group_parent
+INNER JOIN product_group ON product_group.id = product_group_parent.product_group_id
+WHERE product_group_parent.active = 1
+  AND product_group.active = 1
+  AND product_group_parent.parent_product_id IN (:productIds)
+SQL,
+            ['productIds' => $productIds],
+            ['productIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+        );
+
+        $flags = [];
+        foreach ($rows as $productId) {
+            $flags[(int) $productId] = true;
+        }
+
+        return $flags;
     }
 
     /**
