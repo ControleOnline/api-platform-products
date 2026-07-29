@@ -8,6 +8,7 @@ use ControleOnline\Entity\Order;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\PeopleDomain;
 use ControleOnline\Entity\Product;
+use ControleOnline\Entity\ProductFile;
 use ControleOnline\Entity\ProductInventory;
 use ControleOnline\Entity\ProductShowcase;
 use ControleOnline\Entity\ProductShowcaseItem;
@@ -314,12 +315,10 @@ class ProductShowcaseCatalogService
     ): array {
         $qb = $this->manager->getRepository(ProductShowcaseItem::class)
             ->createQueryBuilder('item')
-            ->addSelect('product', 'showcase', 'outInventory', 'productFile', 'productFileData')
+            ->addSelect('product', 'showcase', 'outInventory')
             ->join('item.product', 'product')
             ->join('item.showcase', 'showcase')
             ->leftJoin('item.outInventory', 'outInventory')
-            ->leftJoin('product.productFiles', 'productFile')
-            ->leftJoin('productFile.file', 'productFileData')
             ->andWhere('item.showcase = :showcase')
             ->andWhere('item.active = true')
             ->andWhere('product.active = true')
@@ -339,6 +338,7 @@ class ProductShowcaseCatalogService
             ->getSingleScalarResult();
 
         $items = $qb
+            ->groupBy('item.id')
             ->orderBy('product.product', 'ASC')
             ->setFirstResult(($page - 1) * $itemsPerPage)
             ->setMaxResults($itemsPerPage)
@@ -355,9 +355,7 @@ class ProductShowcaseCatalogService
     {
         $qb = $this->manager->getRepository(Product::class)
             ->createQueryBuilder('product')
-            ->addSelect('productFile', 'productFileData', 'defaultOutInventory')
-            ->leftJoin('product.productFiles', 'productFile')
-            ->leftJoin('productFile.file', 'productFileData')
+            ->addSelect('defaultOutInventory')
             ->leftJoin('product.defaultOutInventory', 'defaultOutInventory')
             ->andWhere('product.company = :company')
             ->andWhere('product.active = true')
@@ -374,6 +372,7 @@ class ProductShowcaseCatalogService
             ->getSingleScalarResult();
 
         $products = $qb
+            ->groupBy('product.id')
             ->orderBy('product.product', 'ASC')
             ->setFirstResult(($page - 1) * $itemsPerPage)
             ->setMaxResults($itemsPerPage)
@@ -436,17 +435,22 @@ class ProductShowcaseCatalogService
             ?? $filters['exists[productFiles]']
             ?? ''
         );
-        if (in_array(strtolower($requiresProductFile), ['1', 'true', 'yes'], true)) {
-            $qb->andWhere('productFile.id IS NOT NULL');
-        }
 
         $fileType = trim((string) (
             $filters['productFiles']['file']['fileType']
             ?? $filters['productFiles.file.fileType']
             ?? ''
         ));
+        if (in_array(strtolower($requiresProductFile), ['1', 'true', 'yes'], true) || $fileType !== '') {
+            $qb->innerJoin(sprintf('%s.productFiles', $productAlias), 'showcaseProductFile')
+                ->innerJoin('showcaseProductFile.file', 'showcaseProductFileData');
+        }
+        if (in_array(strtolower($requiresProductFile), ['1', 'true', 'yes'], true)) {
+            $qb->andWhere('showcaseProductFile.id IS NOT NULL');
+        }
+
         if ($fileType !== '') {
-            $qb->andWhere('productFileData.fileType = :showcaseProductFileType')
+            $qb->andWhere('showcaseProductFileData.fileType = :showcaseProductFileType')
                 ->setParameter('showcaseProductFileType', $fileType);
         }
     }
@@ -600,7 +604,11 @@ SQL,
     {
         $files = [];
 
-        foreach ($product->getProductFiles() as $productFile) {
+        $productFiles = $this->manager->getRepository(ProductFile::class)->findBy([
+            'product' => $product,
+        ]);
+
+        foreach ($productFiles as $productFile) {
             $file = $productFile->getFile();
             $files[] = [
                 'id' => $productFile->getId(),
