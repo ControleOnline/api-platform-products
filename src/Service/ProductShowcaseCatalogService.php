@@ -417,6 +417,7 @@ class ProductShowcaseCatalogService
         $productCategoryFilter = $filters['productCategory'] ?? null;
         $categoryFilter = $filters['category']
             ?? $filters['productCategory.category']
+            ?? $filters['productCategory_category']
             ?? (is_array($productCategoryFilter) ? ($productCategoryFilter['category'] ?? '') : '');
         $categoryId = (int) preg_replace(
             '/\D+/',
