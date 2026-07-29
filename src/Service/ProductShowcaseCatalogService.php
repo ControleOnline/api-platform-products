@@ -517,6 +517,7 @@ class ProductShowcaseCatalogService
                     'fileName' => $file->getFileName(),
                     'extension' => $file->getExtension(),
                     'context' => $file->getContext(),
+                    'public' => $file->isPublic(),
                 ],
             ];
         }

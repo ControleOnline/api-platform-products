@@ -66,6 +66,10 @@ class ProductFile
 
     public function setFile(File $file): self
     {
+        if (strtolower((string) $file->getFileType()) === 'image') {
+            $file->setPublic(true);
+        }
+
         $this->file = $file;
         return $this;
     }
