@@ -106,17 +106,17 @@ class ProductShowcaseItem
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
     public function touch(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTime();
         if (!isset($this->createdAt)) {
-            $this->createdAt = new \DateTimeImmutable();
+            $this->createdAt = new \DateTime();
         }
     }
 
@@ -224,7 +224,12 @@ class ProductShowcaseItem
     {
         if (is_string($syncSyncedAt)) {
             $value = trim($syncSyncedAt);
-            $this->syncSyncedAt = $value !== '' ? new \DateTimeImmutable($value) : null;
+            $this->syncSyncedAt = $value !== '' ? new \DateTime($value) : null;
+            return $this;
+        }
+
+        if ($syncSyncedAt instanceof \DateTimeImmutable) {
+            $this->syncSyncedAt = \DateTime::createFromImmutable($syncSyncedAt);
             return $this;
         }
 
