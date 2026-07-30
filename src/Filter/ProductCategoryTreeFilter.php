@@ -37,14 +37,9 @@ final class ProductCategoryTreeFilter extends AbstractFilter
 
         $queryBuilder
             ->distinct()
-            ->join(
-                'ControleOnline\Entity\ProductCategory',
-                $joinAlias,
-                'WITH',
-                sprintf('%s.product = %s', $joinAlias, $rootAlias),
-            )
+            ->join(sprintf('%s.productCategory', $rootAlias), $joinAlias)
             ->andWhere(sprintf('IDENTITY(%s.category) IN (:%s)', $joinAlias, $parameterName))
-            ->setParameter($parameterName, $categoryIds);
+            ->setParameter($parameterName, $categoryIds, ArrayParameterType::INTEGER);
     }
 
     public function getDescription(string $resourceClass): array
