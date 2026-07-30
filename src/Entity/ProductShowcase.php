@@ -83,13 +83,13 @@ class ProductShowcase
     #[Groups(['product_showcase:read', 'product_showcase:write'])]
     private bool $active = true;
 
-    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false, insertable: false, updatable: false, columnDefinition: 'DATETIME DEFAULT CURRENT_TIMESTAMP')]
     #[Groups(['product_showcase:read'])]
-    private \DateTimeInterface $createdAt;
+    private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: false, insertable: false, updatable: false, columnDefinition: 'DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')]
     #[Groups(['product_showcase:read'])]
-    private \DateTimeInterface $updatedAt;
+    private ?\DateTimeInterface $updatedAt = null;
 
     #[ORM\OneToMany(targetEntity: ProductShowcaseItem::class, mappedBy: 'showcase')]
     private Collection $items;
@@ -97,8 +97,6 @@ class ProductShowcase
     public function __construct()
     {
         $this->items = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
     }
 
     #[ORM\PrePersist]
@@ -106,10 +104,6 @@ class ProductShowcase
     public function touch(): void
     {
         $this->integrationKey = self::normalizeIntegrationKey($this->integrationKey);
-        $this->updatedAt = new \DateTimeImmutable();
-        if (!isset($this->createdAt)) {
-            $this->createdAt = new \DateTimeImmutable();
-        }
     }
 
     public static function normalizeIntegrationKey(?string $value): string
@@ -208,12 +202,12 @@ class ProductShowcase
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeInterface
+    public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
     }

@@ -93,6 +93,12 @@ class ProductShowcaseCatalogService
                 '@id' => '/product_showcases/' . $showcase->getId(),
                 'name' => $showcase->getName(),
                 'integrationKey' => $showcase->getIntegrationKey(),
+                'peopleDomain' => $showcase->getPeopleDomain() instanceof PeopleDomain ? [
+                    'id' => $showcase->getPeopleDomain()->getId(),
+                    '@id' => '/people_domains/' . $showcase->getPeopleDomain()->getId(),
+                    'domain' => $showcase->getPeopleDomain()->getDomain(),
+                ] : null,
+                'settings' => $showcase->getSettings(),
             ] : null,
             'source' => $source,
         ];

@@ -44,7 +44,6 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\Index(name: 'product_showcase_item_product_active', columns: ['product_id', 'active'])]
 #[ORM\Index(name: 'product_showcase_item_inventory', columns: ['out_inventory_id'])]
 #[ORM\Entity(repositoryClass: ProductShowcaseItemRepository::class)]
-#[ORM\HasLifecycleCallbacks]
 class ProductShowcaseItem
 {
     #[ORM\Id]
@@ -96,29 +95,13 @@ class ProductShowcaseItem
     #[Groups(['product_showcase_item:read', 'product_showcase_item:write'])]
     private ?array $settings = [];
 
-    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false, insertable: false, updatable: false, columnDefinition: 'DATETIME DEFAULT CURRENT_TIMESTAMP')]
     #[Groups(['product_showcase_item:read'])]
-    private \DateTimeInterface $createdAt;
+    private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: false, insertable: false, updatable: false, columnDefinition: 'DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')]
     #[Groups(['product_showcase_item:read'])]
-    private \DateTimeInterface $updatedAt;
-
-    public function __construct()
-    {
-        $this->createdAt = new \DateTime();
-        $this->updatedAt = new \DateTime();
-    }
-
-    #[ORM\PrePersist]
-    #[ORM\PreUpdate]
-    public function touch(): void
-    {
-        $this->updatedAt = new \DateTime();
-        if (!isset($this->createdAt)) {
-            $this->createdAt = new \DateTime();
-        }
-    }
+    private ?\DateTimeInterface $updatedAt = null;
 
     public function getId(): int
     {
@@ -248,12 +231,12 @@ class ProductShowcaseItem
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeInterface
+    public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
     }
