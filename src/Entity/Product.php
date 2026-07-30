@@ -15,6 +15,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ControleOnline\Filter\RandomOrderFilter;
+use ControleOnline\Filter\ProductCategoryTreeFilter;
 
 use ControleOnline\Repository\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -66,7 +67,7 @@ class Product
     #[Groups(['product_inventory:read', 'product:read', 'orders-queue:read', 'product_category:read', 'order_details:read', 'order:write', 'order_product:read'])]
     private $productFiles;
 
-    #[ApiFilter(filterClass: SearchFilter::class, properties: ['productCategory.category' => 'exact'])]
+    #[ApiFilter(ProductCategoryTreeFilter::class)]
     #[ORM\OneToMany(targetEntity: ProductCategory::class, mappedBy: 'product')]
     private $productCategory;
 
