@@ -49,7 +49,7 @@ class Product
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'order_product:read'])]
+    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'order_product:read', 'tracking:read'])]
     private $id;
 
     #[Groups(['product_category:read', 'product:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
@@ -58,7 +58,7 @@ class Product
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['product' => 'partial'])]
     #[ORM\Column(name: 'product', type: 'string', length: 255, nullable: true)]
-    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
+    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write', 'tracking:read'])]
     private $product;
 
     #[ApiFilter(filterClass: ExistsFilter::class, properties: ['productFiles', 'queue'])]
@@ -82,7 +82,7 @@ class Product
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['type' => 'exact'])]
     #[ORM\Column(name: 'type', type: 'string', length: 0, nullable: false, options: ['default' => "'product'"])]
-    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write'])]
+    #[Groups(['product_category:read', 'product_inventory:read', 'product:read', 'product_people:read', 'orders-queue:read', 'product_group_product:read', 'order_product:read', 'order_product_queue:read', 'order:read', 'order_details:read', 'order:write',  'product:write', 'tracking:read'])]
     private $type = 'product';
 
     #[ORM\Column(name: 'price', type: 'float', precision: 10, scale: 0, nullable: false)]
@@ -341,5 +341,70 @@ class Product
     public function getExtraData()
     {
         return $this->extraData;
+    }
+
+    /**
+     * Minimal production-ordering projection used by the Tracking display.
+     *
+     * Category names are intentionally omitted: Tracking uses this only as an
+     * internal stable rank and never renders catalog categories.
+     */
+    #[Groups(['tracking:read', 'order_conference:read'])]
+    public function getTrackingCategory(): ?array
+    {
+        $rootCategories = [];
+
+        foreach ($this->productCategory as $productCategory) {
+            $category = $productCategory->getCategory();
+            $visited = [];
+
+            while ($category->getParent() instanceof Category) {
+                $categoryId = (int) $category->getId();
+                if (isset($visited[$categoryId])) {
+                    break;
+                }
+
+                $visited[$categoryId] = true;
+                $category = $category->getParent();
+            }
+
+            $rootCategoryId = (int) $category->getId();
+            if ($rootCategoryId > 0) {
+                $rootCategories[$rootCategoryId] = $category;
+            }
+        }
+
+        if ($rootCategories === []) {
+            return null;
+        }
+
+        uasort($rootCategories, static function (Category $left, Category $right): int {
+            $leftOrder = $left->getSortOrder();
+            $rightOrder = $right->getSortOrder();
+
+            if ($leftOrder !== $rightOrder) {
+                if ($leftOrder === null) {
+                    return 1;
+                }
+                if ($rightOrder === null) {
+                    return -1;
+                }
+
+                return $leftOrder <=> $rightOrder;
+            }
+
+            $nameComparison = strcasecmp((string) $left->getName(), (string) $right->getName());
+            return $nameComparison !== 0
+                ? $nameComparison
+                : (int) $left->getId() <=> (int) $right->getId();
+        });
+
+        $rootCategory = reset($rootCategories);
+        $rootCategoryId = (int) $rootCategory->getId();
+
+        return [
+            'id' => $rootCategoryId,
+            'rank' => $rootCategory->getSortOrder(),
+        ];
     }
 }

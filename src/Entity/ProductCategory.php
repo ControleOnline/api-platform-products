@@ -31,7 +31,12 @@ use Doctrine\ORM\Mapping as ORM;
     normalizationContext: ['groups' => ['product_category:read']],
     denormalizationContext: ['groups' => ['product_category:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['product.product'])]
+#[ApiFilter(OrderFilter::class, properties: [
+    'sortOrder' => ['nulls_comparison' => 'nulls_always_last'],
+    'category.sortOrder' => ['nulls_comparison' => 'nulls_always_last'],
+    'product.product',
+    'id',
+])]
 #[ApiFilter(filterClass: SearchFilter::class, properties: ['category' => 'exact', 'category.company' => 'exact', 'category.context' => 'exact', 'product' => 'exact'])]
 #[ORM\Table(name: 'product_category')]
 #[ORM\Index(name: 'category_id', columns: ['category_id'])]
@@ -55,6 +60,10 @@ class ProductCategory
     #[ORM\ManyToOne(targetEntity: Product::class)]
     #[Groups(['product_category:read', 'product_category:write'])]
     private Product $product;
+
+    #[ORM\Column(name: 'sort_order', type: 'integer', nullable: true)]
+    #[Groups(['product_category:read', 'product_category:write'])]
+    private ?int $sortOrder = null;
 
     public function getId(): int
     {
@@ -80,6 +89,17 @@ class ProductCategory
     public function setProduct(Product $product): self
     {
         $this->product = $product;
+        return $this;
+    }
+
+    public function getSortOrder(): ?int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(?int $sortOrder): self
+    {
+        $this->sortOrder = $sortOrder;
         return $this;
     }
 }
