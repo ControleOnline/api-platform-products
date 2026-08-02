@@ -27,7 +27,16 @@ use Symfony\Component\Serializer\Attribute\Groups;
     normalizationContext: ['groups' => ['product_showcase_item:read']],
     denormalizationContext: ['groups' => ['product_showcase_item:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['id', 'price', 'active', 'published', 'updatedAt'])]
+#[ApiFilter(OrderFilter::class, properties: [
+    'sortOrder' => ['nulls_comparison' => 'nulls_always_last'],
+    'product.product',
+    'showcase.name',
+    'id',
+    'price',
+    'active',
+    'published',
+    'updatedAt',
+])]
 #[ApiFilter(SearchFilter::class, properties: [
     'id' => 'exact',
     'showcase' => 'exact',
@@ -82,6 +91,10 @@ class ProductShowcaseItem
     #[ORM\Column(name: 'published', type: 'boolean', nullable: false, options: ['default' => 0])]
     #[Groups(['product_showcase_item:read', 'product_showcase_item:write'])]
     private bool $published = false;
+
+    #[ORM\Column(name: 'sort_order', type: 'integer', nullable: true)]
+    #[Groups(['product_showcase_item:read', 'product_showcase_item:write'])]
+    private ?int $sortOrder = null;
 
     #[ORM\Column(name: 'sync_hash', type: 'string', length: 128, nullable: true)]
     #[Groups(['product_showcase_item:read', 'product_showcase_item:write'])]
@@ -183,6 +196,17 @@ class ProductShowcaseItem
     public function setPublished(bool $published): self
     {
         $this->published = $published;
+        return $this;
+    }
+
+    public function getSortOrder(): ?int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(?int $sortOrder): self
+    {
+        $this->sortOrder = $sortOrder;
         return $this;
     }
 

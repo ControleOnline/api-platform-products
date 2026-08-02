@@ -34,7 +34,15 @@ use Doctrine\ORM\Mapping as ORM;
     normalizationContext: ['groups' => ['product_group_product:read']],
     denormalizationContext: ['groups' => ['product_group_product:write']]
 )]
-#[ApiFilter(OrderFilter::class, properties: ['productGroup.productGroup' => 'ASC', 'product.product' => 'ASC'])]
+#[ApiFilter(OrderFilter::class, properties: [
+    'sortOrder' => [
+        'default_direction' => 'ASC',
+        'nulls_comparison' => 'nulls_always_last',
+    ],
+    'productGroup.productGroup' => 'ASC',
+    'product.product' => 'ASC',
+    'id' => 'ASC',
+])]
 #[ApiFilter(ExistsFilter::class, properties: ['productGroup'])]
 #[ORM\Table(name: 'product_group_product')]
 #[ORM\Entity(repositoryClass: ProductGroupProductRepository::class)]
@@ -93,6 +101,10 @@ class ProductGroupProduct
     #[ORM\Column(name: 'show_in_parent_queue', type: 'boolean', nullable: false, options: ['default' => '1'])]
     #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
     private $showInParentQueue = true;
+
+    #[ORM\Column(name: 'sort_order', type: 'integer', nullable: true)]
+    #[Groups(['product_group_product:read', 'product_group:write', 'product_group_product:write'])]
+    private ?int $sortOrder = null;
 
     public function getId()
     {
@@ -184,6 +196,17 @@ class ProductGroupProduct
     public function setShowInParentQueue(bool $showInParentQueue): self
     {
         $this->showInParentQueue = $showInParentQueue;
+        return $this;
+    }
+
+    public function getSortOrder(): ?int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(?int $sortOrder): self
+    {
+        $this->sortOrder = $sortOrder;
         return $this;
     }
 }

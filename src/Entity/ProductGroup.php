@@ -39,16 +39,20 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ProductGroupRepository::class)]
 class ProductGroup
 {
+    public const CUSTOMIZATION_TYPE_NEUTRAL = 'neutral';
+    public const CUSTOMIZATION_TYPE_ADDITION = 'addition';
+    public const CUSTOMIZATION_TYPE_REMOVAL = 'removal';
+
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
     private $id;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['productGroup' => 'exact'])]
     #[ORM\Column(name: 'product_group', type: 'string', length: 255, nullable: false)]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
     private $productGroup;
 
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['priceCalculation' => 'exact'])]
@@ -73,14 +77,27 @@ class ProductGroup
     private $active = true;
 
     #[ORM\Column(name: 'show_in_display', type: 'boolean', nullable: false, options: ['default' => '0'])]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
     private $showInDisplay = false;
 
+    #[ORM\Column(name: 'show_in_print', type: 'boolean', nullable: true, options: ['default' => 'NULL'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
+    private ?bool $showInPrint = null;
+
+    #[ORM\Column(name: 'show_unit_quantity', type: 'boolean', nullable: true, options: ['default' => 'NULL'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
+    private ?bool $showUnitQuantity = null;
+
+    #[ORM\Column(name: 'customization_type', type: 'string', length: 16, nullable: false, options: ['default' => self::CUSTOMIZATION_TYPE_NEUTRAL])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
+    private string $customizationType = self::CUSTOMIZATION_TYPE_NEUTRAL;
+
     #[ORM\Column(name: 'group_order', type: 'integer', nullable: false)]
-    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read'])]
+    #[Groups(['product_group:read', 'order_product_queue:read', 'orders-queue:read', 'order_conference:read', 'order_details:read', 'product_group:write', 'order_product:read', 'tracking:read'])]
     private $groupOrder = 0;
 
     #[ORM\OneToMany(targetEntity: ProductGroupProduct::class, mappedBy: 'productGroup', orphanRemoval: true)]
+    #[ORM\OrderBy(['sortOrder' => 'ASC', 'id' => 'ASC'])]
     #[Groups(['product_group:write'])]
     private $products;
 
@@ -206,6 +223,46 @@ class ProductGroup
     public function setShowInDisplay(bool $showInDisplay): self
     {
         $this->showInDisplay = $showInDisplay;
+        return $this;
+    }
+
+    public function getShowInPrint(): bool
+    {
+        return $this->showInPrint ?? $this->showInDisplay;
+    }
+
+    public function setShowInPrint(?bool $showInPrint): self
+    {
+        $this->showInPrint = $showInPrint;
+        return $this;
+    }
+
+    public function getShowUnitQuantity(): ?bool
+    {
+        return $this->showUnitQuantity;
+    }
+
+    public function setShowUnitQuantity(?bool $showUnitQuantity): self
+    {
+        $this->showUnitQuantity = $showUnitQuantity;
+        return $this;
+    }
+
+    public function getCustomizationType(): string
+    {
+        return $this->customizationType;
+    }
+
+    public function setCustomizationType(string $customizationType): self
+    {
+        $allowedTypes = [
+            self::CUSTOMIZATION_TYPE_NEUTRAL,
+            self::CUSTOMIZATION_TYPE_ADDITION,
+            self::CUSTOMIZATION_TYPE_REMOVAL,
+        ];
+        $this->customizationType = in_array($customizationType, $allowedTypes, true)
+            ? $customizationType
+            : self::CUSTOMIZATION_TYPE_NEUTRAL;
         return $this;
     }
 
