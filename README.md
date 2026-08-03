@@ -3,13 +3,11 @@
 # products
 
 
-`composer require controleonline/products:dev-master`
+## Instalacao
+[Instalacao na wiki](https://github.com/ControleOnline/api-platform-products/wiki/Instalacao)
 
+## Links obrigatorios
 
-Add Service import:
-config\services.yaml
-
-```yaml
-imports:
-    - { resource: "../modules/controleonline/orders/products/services/products.yaml" }    
-```
+- [Documentacao para clientes](http://ajuda.controleonline.com/)
+- [Site institucional](http://controleonline.com/)
+- [Wiki tecnica](https://github.com/ControleOnline/api-platform-products/wiki)
