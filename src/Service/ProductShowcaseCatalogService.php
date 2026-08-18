@@ -8,13 +8,11 @@ use ControleOnline\Entity\Order;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\PeopleDomain;
 use ControleOnline\Entity\Product;
-use ControleOnline\Entity\ProductFile;
 use ControleOnline\Entity\ProductInventory;
 use ControleOnline\Entity\ProductShowcase;
 use ControleOnline\Entity\ProductShowcaseItem;
 use ControleOnline\Repository\ProductShowcaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\QueryBuilder;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ProductShowcaseCatalogService
@@ -26,7 +24,9 @@ class ProductShowcaseCatalogService
         private EntityManagerInterface $manager,
         private DeviceService $deviceService,
         private DomainService $domainService,
-        private RequestStack $requestStack
+        private RequestStack $requestStack,
+        private ProductCatalogQueryService $catalogQuery,
+        private ProductCatalogProjectionService $catalogProjection
     ) {}
 
     public function normalizeIntegrationKey(?string $integrationKey): string
@@ -50,38 +50,58 @@ class ProductShowcaseCatalogService
         $page = max(1, (int) ($filters['page'] ?? 1));
         $itemsPerPage = max(1, min(100, (int) ($filters['itemsPerPage'] ?? 50)));
 
-        // @agents Catalog source rule: use a configured showcase when it has usable items; an empty showcase falls back to active company products.
         if ($showcase instanceof ProductShowcase) {
-            [$items, $totalItems] = $this->fetchShowcaseItems($showcase, $filters, $page, $itemsPerPage);
+            [$items, $totalItems] = $this->catalogQuery
+                ->fetchShowcaseItems($showcase, $filters, $page, $itemsPerPage);
+            $products = array_map(
+                static fn(ProductShowcaseItem $item): Product => $item->getProduct(),
+                $items
+            );
+            $projection = $this->catalogProjection->build($products, $company, $showcase);
+            $members = array_map(
+                fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct(
+                    $item,
+                    $projection['products'][(int) $item->getProduct()->getId()]
+                ),
+                $items
+            );
 
-            if ($totalItems > 0 || $this->showcaseHasActiveCatalogItems($showcase)) {
-                $customizationGroupFlags = $this->resolveCustomizationGroupFlags(
-                    array_map(fn(ProductShowcaseItem $item): Product => $item->getProduct(), $items)
-                );
-                $members = array_map(
-                    fn(ProductShowcaseItem $item): array => $this->buildShowcaseCatalogProduct($item, $customizationGroupFlags),
-                    $items
-                );
-
-                return $this->buildCatalogPayload($members, $totalItems, $showcase, 'showcase');
-            }
+            // A resolved showcase is authoritative, including when it publishes no items.
+            return $this->buildCatalogPayload(
+                $members,
+                $totalItems,
+                $showcase,
+                'showcase',
+                $projection['categoryIds']
+            );
         }
 
-        [$products, $totalItems] = $this->fetchFallbackProducts($company, $filters, $page, $itemsPerPage);
-        $customizationGroupFlags = $this->resolveCustomizationGroupFlags($products);
+        [$products, $totalItems] = $this->catalogQuery
+            ->fetchFallbackProducts($company, $filters, $page, $itemsPerPage);
+        $projection = $this->catalogProjection->build($products, $company, null);
         $members = array_map(
-            fn(Product $product): array => $this->buildFallbackCatalogProduct($product, $customizationGroupFlags),
+            fn(Product $product): array => $this->buildFallbackCatalogProduct(
+                $product,
+                $projection['products'][(int) $product->getId()]
+            ),
             $products
         );
 
-        return $this->buildCatalogPayload($members, $totalItems, null, 'product');
+        return $this->buildCatalogPayload(
+            $members,
+            $totalItems,
+            null,
+            'product',
+            $projection['categoryIds']
+        );
     }
 
     private function buildCatalogPayload(
         array $members,
         int $totalItems,
         ?ProductShowcase $showcase,
-        string $source
+        string $source,
+        array $categoryIds
     ): array {
         return [
             '@id' => '/product-showcases/catalog',
@@ -101,6 +121,12 @@ class ProductShowcaseCatalogService
                 'settings' => $showcase->getSettings(),
             ] : null,
             'source' => $source,
+            'legacyFallback' => !$showcase instanceof ProductShowcase,
+            'categoryIds' => $categoryIds,
+            'categoryProjection' => [
+                'source' => $showcase instanceof ProductShowcase ? 'showcase' : 'legacy-product',
+                'ids' => $categoryIds,
+            ],
         ];
     }
 
@@ -184,10 +210,7 @@ class ProductShowcaseCatalogService
     {
         $app = $this->normalizeIntegrationKey($order->getApp());
 
-        return match ($app) {
-            'pos', 'shop', 'ifood', '99food' => $app,
-            default => '',
-        };
+        return $app;
     }
 
     private function resolveShowcase(
@@ -198,8 +221,13 @@ class ProductShowcaseCatalogService
     ): ?ProductShowcase {
         $normalizedIntegrationKey = $this->normalizeIntegrationKey($integrationKey);
 
-        if ($normalizedIntegrationKey === 'pos') {
-            $deviceShowcase = $this->resolveDeviceShowcase($company, $deviceReference, $deviceType);
+        if (in_array($normalizedIntegrationKey, ['pos', 'totem'], true)) {
+            $deviceShowcase = $this->resolveDeviceShowcase(
+                $company,
+                $normalizedIntegrationKey,
+                $deviceReference,
+                $deviceType
+            );
             if ($deviceShowcase instanceof ProductShowcase) {
                 return $deviceShowcase;
             }
@@ -239,6 +267,7 @@ class ProductShowcaseCatalogService
 
     private function resolveDeviceShowcase(
         People $company,
+        string $integrationKey,
         mixed $deviceReference = null,
         mixed $deviceType = null
     ): ?ProductShowcase {
@@ -298,7 +327,7 @@ class ProductShowcaseCatalogService
             $showcase = $this->manager->getRepository(ProductShowcase::class)->findOneBy([
                 'id' => $showcaseId,
                 'company' => $company,
-                'integrationKey' => 'pos',
+                'integrationKey' => $integrationKey,
                 'active' => true,
             ]);
 
@@ -311,197 +340,16 @@ class ProductShowcaseCatalogService
     }
 
     /**
-     * @return array{0: ProductShowcaseItem[], 1: int}
+     * @param array<string, mixed> $productPayload
+     *
+     * @return array<string, mixed>
      */
-    private function fetchShowcaseItems(
-        ProductShowcase $showcase,
-        array $filters,
-        int $page,
-        int $itemsPerPage
-    ): array {
-        $qb = $this->manager->getRepository(ProductShowcaseItem::class)
-            ->createQueryBuilder('item')
-            ->addSelect('product', 'showcase', 'outInventory')
-            ->join('item.product', 'product')
-            ->join('item.showcase', 'showcase')
-            ->leftJoin('item.outInventory', 'outInventory')
-            ->andWhere('item.showcase = :showcase')
-            ->andWhere('item.active = true')
-            ->andWhere('product.active = true')
-            // @agents A showcase can only expose products owned by the same company as the showcase.
-            ->andWhere('product.company = :showcaseCompany')
-            ->setParameter('showcase', $showcase)
-            ->setParameter('showcaseCompany', $showcase->getCompany());
-
-        $this->applyProductFilters($qb, $filters, 'product');
-
-        $countQb = clone $qb;
-        $totalItems = (int) $countQb
-            ->resetDQLPart('select')
-            ->resetDQLPart('orderBy')
-            ->select('COUNT(DISTINCT item.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        $items = $qb
-            ->groupBy('item.id')
-            ->orderBy('product.product', 'ASC')
-            ->setFirstResult(($page - 1) * $itemsPerPage)
-            ->setMaxResults($itemsPerPage)
-            ->getQuery()
-            ->getResult();
-
-        return [$items, $totalItems];
-    }
-
-    /**
-     * @return array{0: Product[], 1: int}
-     */
-    private function fetchFallbackProducts(People $company, array $filters, int $page, int $itemsPerPage): array
-    {
-        $qb = $this->manager->getRepository(Product::class)
-            ->createQueryBuilder('product')
-            ->addSelect('defaultOutInventory')
-            ->leftJoin('product.defaultOutInventory', 'defaultOutInventory')
-            ->andWhere('product.company = :company')
-            ->andWhere('product.active = true')
-            ->setParameter('company', $company);
-
-        $this->applyProductFilters($qb, $filters, 'product');
-
-        $countQb = clone $qb;
-        $totalItems = (int) $countQb
-            ->resetDQLPart('select')
-            ->resetDQLPart('orderBy')
-            ->select('COUNT(DISTINCT product.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        $products = $qb
-            ->groupBy('product.id')
-            ->orderBy('product.product', 'ASC')
-            ->setFirstResult(($page - 1) * $itemsPerPage)
-            ->setMaxResults($itemsPerPage)
-            ->getQuery()
-            ->getResult();
-
-        return [$products, $totalItems];
-    }
-
-    private function showcaseHasActiveCatalogItems(ProductShowcase $showcase): bool
-    {
-        return $this->manager
-            ->getRepository(ProductShowcaseItem::class)
-            ->hasActiveCatalogItems($showcase);
-    }
-
-    private function applyProductFilters(QueryBuilder $qb, array $filters, string $productAlias): void
-    {
-        $types = $filters['type'] ?? ['custom', 'product', 'manufactured', 'service'];
-        $types = is_array($types) ? array_filter($types) : [trim((string) $types)];
-        if (!empty($types)) {
-            $qb->andWhere(sprintf('%s.type IN (:showcaseProductTypes)', $productAlias))
-                ->setParameter('showcaseProductTypes', array_values($types));
-        }
-
-        $search = trim((string) ($filters['search'] ?? $filters['product'] ?? ''));
-        if ($search !== '') {
-            $qb->andWhere(sprintf('%s.product LIKE :showcaseProductSearch', $productAlias))
-                ->setParameter('showcaseProductSearch', '%' . $search . '%');
-        }
-
-        $productId = (int) preg_replace(
-            '/\D+/',
-            '',
-            (string) ($filters['id'] ?? $filters['product.id'] ?? '')
-        );
-        if ($productId > 0) {
-            $qb->andWhere(sprintf('%s.id = :showcaseProductId', $productAlias))
-                ->setParameter('showcaseProductId', $productId);
-        }
-
-        $productCategoryFilter = $filters['productCategory'] ?? null;
-        $categoryFilter = $filters['category']
-            ?? $filters['productCategory.category']
-            ?? $filters['productCategory_category']
-            ?? (is_array($productCategoryFilter) ? ($productCategoryFilter['category'] ?? '') : '');
-        $categoryId = (int) preg_replace(
-            '/\D+/',
-            '',
-            (string) $categoryFilter
-        );
-        if ($categoryId > 0) {
-            $categoryIds = $this->resolveCategoryTreeIds($categoryId);
-            $qb->join('ControleOnline\Entity\ProductCategory', 'showcaseProductCategory', 'WITH', sprintf('showcaseProductCategory.product = %s', $productAlias))
-                ->andWhere('IDENTITY(showcaseProductCategory.category) IN (:showcaseCategoryIds)')
-                ->setParameter('showcaseCategoryIds', $categoryIds);
-        }
-
-        $requiresProductFile = (string) (
-            $filters['exists']['productFiles']
-            ?? $filters['exists[productFiles]']
-            ?? ''
-        );
-
-        $fileType = trim((string) (
-            $filters['productFiles']['file']['fileType']
-            ?? $filters['productFiles.file.fileType']
-            ?? ''
-        ));
-        if (in_array(strtolower($requiresProductFile), ['1', 'true', 'yes'], true) || $fileType !== '') {
-            $qb->innerJoin(sprintf('%s.productFiles', $productAlias), 'showcaseProductFile')
-                ->innerJoin('showcaseProductFile.file', 'showcaseProductFileData');
-        }
-        if (in_array(strtolower($requiresProductFile), ['1', 'true', 'yes'], true)) {
-            $qb->andWhere('showcaseProductFile.id IS NOT NULL');
-        }
-
-        if ($fileType !== '') {
-            $qb->andWhere('showcaseProductFileData.fileType = :showcaseProductFileType')
-                ->setParameter('showcaseProductFileType', $fileType);
-        }
-    }
-
-    /**
-     * @return int[]
-     */
-    private function resolveCategoryTreeIds(int $categoryId): array
-    {
-        $connection = $this->manager->getConnection();
-        $ids = [$categoryId];
-        $frontier = [$categoryId];
-
-        while ($frontier !== []) {
-            $children = $connection->fetchFirstColumn(
-                'SELECT id FROM category WHERE parent_id IN (:parentIds)',
-                ['parentIds' => $frontier],
-                ['parentIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
-            );
-
-            $children = array_values(array_diff(
-                array_map('intval', $children),
-                $ids
-            ));
-            if ($children === []) {
-                break;
-            }
-
-            $ids = array_merge($ids, $children);
-            $frontier = $children;
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    private function buildShowcaseCatalogProduct(ProductShowcaseItem $item, array $customizationGroupFlags = []): array
+    private function buildShowcaseCatalogProduct(ProductShowcaseItem $item, array $productPayload): array
     {
         $product = $item->getProduct();
-        $outInventory = $item->getOutInventory();
+        $outInventory = $item->getOutInventory() ?: $product->getDefaultOutInventory();
 
-        return array_merge($this->buildProductPayload(
-            $product,
-            !empty($customizationGroupFlags[(int) $product->getId()])
-        ), [
+        return array_merge($productPayload, [
             'price' => $item->getPrice(),
             'outInventory' => $outInventory instanceof Inventory ? [
                 'id' => $outInventory->getId(),
@@ -513,6 +361,7 @@ class ProductShowcaseCatalogService
                 '@id' => '/product_showcase_items/' . $item->getId(),
                 'externalCode' => $item->getExternalCode(),
                 'published' => $item->isPublished(),
+                'sortOrder' => $item->getSortOrder(),
                 'showcase' => [
                     'id' => $item->getShowcase()->getId(),
                     'name' => $item->getShowcase()->getName(),
@@ -527,14 +376,16 @@ class ProductShowcaseCatalogService
         ]);
     }
 
-    private function buildFallbackCatalogProduct(Product $product, array $customizationGroupFlags = []): array
+    /**
+     * @param array<string, mixed> $productPayload
+     *
+     * @return array<string, mixed>
+     */
+    private function buildFallbackCatalogProduct(Product $product, array $productPayload): array
     {
         $outInventory = $product->getDefaultOutInventory();
 
-        return array_merge($this->buildProductPayload(
-            $product,
-            !empty($customizationGroupFlags[(int) $product->getId()])
-        ), [
+        return array_merge($productPayload, [
             'outInventory' => $outInventory instanceof Inventory ? [
                 'id' => $outInventory->getId(),
                 '@id' => '/inventories/' . $outInventory->getId(),
@@ -547,91 +398,5 @@ class ProductShowcaseCatalogService
                     : null,
             ],
         ]);
-    }
-
-    private function buildProductPayload(Product $product, bool $hasCustomizationGroups = false): array
-    {
-        return [
-            'id' => $product->getId(),
-            '@id' => '/products/' . $product->getId(),
-            'product' => $product->getProduct(),
-            'description' => $product->getDescription(),
-            'sku' => $product->getSku(),
-            'type' => $product->getType(),
-            'price' => $product->getPrice(),
-            'active' => $product->isActive(),
-            'featured' => $product->getFeatured(),
-            'hasCustomizationGroups' => $hasCustomizationGroups,
-            'customizationGroupsLoaded' => true,
-            'productFiles' => $this->buildProductFilesPayload($product),
-        ];
-    }
-
-    /**
-     * @param Product[] $products
-     *
-     * @return array<int, bool>
-     */
-    private function resolveCustomizationGroupFlags(array $products): array
-    {
-        $productIds = array_values(array_unique(array_filter(array_map(
-            static fn(Product $product): int => (int) $product->getId(),
-            $products
-        ))));
-
-        if ($productIds === []) {
-            return [];
-        }
-
-        $rows = $this->manager->getConnection()->fetchFirstColumn(
-            <<<'SQL'
-SELECT DISTINCT product_group_parent.parent_product_id
-FROM product_group_parent
-INNER JOIN product_group ON product_group.id = product_group_parent.product_group_id
-WHERE product_group_parent.active = 1
-  AND product_group.active = 1
-  AND product_group_parent.parent_product_id IN (:productIds)
-SQL,
-            ['productIds' => $productIds],
-            ['productIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
-        );
-
-        $flags = [];
-        foreach ($rows as $productId) {
-            $flags[(int) $productId] = true;
-        }
-
-        return $flags;
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildProductFilesPayload(Product $product): array
-    {
-        $files = [];
-
-        $productFiles = $this->manager->getRepository(ProductFile::class)->findBy([
-            'product' => $product,
-        ]);
-
-        foreach ($productFiles as $productFile) {
-            $file = $productFile->getFile();
-            $files[] = [
-                'id' => $productFile->getId(),
-                '@id' => '/product_files/' . $productFile->getId(),
-                'file' => [
-                    'id' => $file->getId(),
-                    '@id' => '/files/' . $file->getId(),
-                    'fileType' => $file->getFileType(),
-                    'fileName' => $file->getFileName(),
-                    'extension' => $file->getExtension(),
-                    'context' => $file->getContext(),
-                    'public' => $file->isPublic(),
-                ],
-            ];
-        }
-
-        return $files;
     }
 }
