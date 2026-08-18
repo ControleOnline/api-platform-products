@@ -24,11 +24,21 @@ class ProductShowcaseItemRepository extends ServiceEntityRepository
 
     public function findActiveForProduct(ProductShowcase $showcase, Product $product): ?ProductShowcaseItem
     {
-        return $this->findOneBy([
-            'showcase' => $showcase,
-            'product' => $product,
-            'active' => true,
-        ]);
+        return $this->createQueryBuilder('item')
+            ->join('item.showcase', 'showcase')
+            ->join('item.product', 'product')
+            ->andWhere('item.showcase = :showcase')
+            ->andWhere('item.product = :product')
+            ->andWhere('item.active = true')
+            ->andWhere('item.published = true')
+            ->andWhere('showcase.active = true')
+            ->andWhere('product.active = true')
+            ->andWhere('product.company = showcase.company')
+            ->setParameter('showcase', $showcase)
+            ->setParameter('product', $product)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function hasActiveCatalogItems(ProductShowcase $showcase): bool
@@ -38,6 +48,7 @@ class ProductShowcaseItemRepository extends ServiceEntityRepository
             ->join('item.product', 'product')
             ->andWhere('item.showcase = :showcase')
             ->andWhere('item.active = true')
+            ->andWhere('item.published = true')
             ->andWhere('product.active = true')
             // @agents Showcase catalog items must stay inside the showcase company boundary; product_id alone is not authorization.
             ->andWhere('product.company = :company')
@@ -63,12 +74,17 @@ class ProductShowcaseItemRepository extends ServiceEntityRepository
             ->andWhere('showcase.integrationKey = :integrationKey')
             ->andWhere('showcase.active = true')
             ->andWhere('item.active = true')
+            ->andWhere('item.published = true')
             ->andWhere('product.active = true')
             // @agents Showcase exports must never leak products from another company linked by a raw product_id.
             ->andWhere('product.company = showcase.company')
             ->setParameter('company', $company)
             ->setParameter('integrationKey', ProductShowcase::normalizeIntegrationKey($integrationKey))
-            ->orderBy('product.product', 'ASC')
+            ->addSelect('CASE WHEN item.sortOrder IS NULL THEN 1 ELSE 0 END AS HIDDEN showcaseSortOrderNull')
+            ->orderBy('showcaseSortOrderNull', 'ASC')
+            ->addOrderBy('item.sortOrder', 'ASC')
+            ->addOrderBy('product.product', 'ASC')
+            ->addOrderBy('product.id', 'ASC')
             ->getQuery()
             ->getResult();
     }

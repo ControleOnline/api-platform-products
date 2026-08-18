@@ -104,6 +104,64 @@ class ProductGroupRepository extends ServiceEntityRepository
 
     /**
      * @param Product[] $products
+     *
+     * @return ProductGroup[]
+     */
+    public function findActiveForParentProducts(array $products, People $company): array
+    {
+        if ($products === []) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('productGroup')
+            ->distinct()
+            ->addSelect(
+                'groupParent',
+                'parentProduct',
+                'groupProduct',
+                'childProduct',
+                'CASE WHEN groupProduct.sortOrder IS NULL THEN 1 ELSE 0 END AS HIDDEN groupProductOrderNull'
+            )
+            ->join(
+                'productGroup.parentProducts',
+                'groupParent',
+                'WITH',
+                'groupParent.active = true'
+            )
+            ->join('groupParent.parentProduct', 'parentProduct')
+            ->leftJoin(
+                'productGroup.products',
+                'groupProduct',
+                'WITH',
+                'groupProduct.active = true'
+            )
+            ->leftJoin(
+                'groupProduct.productChild',
+                'childProduct',
+                'WITH',
+                'childProduct.active = true AND childProduct.company = :catalogCompany'
+            )
+            ->andWhere('parentProduct IN (:catalogParents)')
+            ->andWhere('parentProduct.company = :catalogCompany')
+            ->andWhere('productGroup.company = :catalogCompany')
+            ->andWhere('productGroup.active = true')
+            ->setParameter('catalogParents', $products)
+            ->setParameter('catalogCompany', $company)
+            ->orderBy('parentProduct.id', 'ASC')
+            ->addOrderBy('productGroup.groupOrder', 'ASC')
+            ->addOrderBy('productGroup.productGroup', 'ASC')
+            ->addOrderBy('productGroup.id', 'ASC')
+            ->addOrderBy('groupProductOrderNull', 'ASC')
+            ->addOrderBy('groupProduct.sortOrder', 'ASC')
+            ->addOrderBy('childProduct.product', 'ASC')
+            ->addOrderBy('childProduct.id', 'ASC')
+            ->addOrderBy('groupProduct.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @param Product[] $products
      * @param int[] $hiddenGroupIds
      *
      * @return ProductGroup[]
