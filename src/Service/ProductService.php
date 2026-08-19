@@ -56,7 +56,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class ProductService
 {
     private const PRODUCT_CATEGORY_CONTEXT = 'products';
-    private const PRODUCT_TYPES = ['product', 'custom', 'component'];
+    private const PRODUCT_TYPES = ['product', 'custom', 'component', 'service'];
     private const PRODUCT_CONDITIONS = ['new', 'used', 'refurbished'];
     private const GROUP_PRICE_CALCULATIONS = ['sum', 'average', 'biggest', 'free'];
     private const GROUP_ITEM_TYPES = ['feedstock', 'component', 'package'];
