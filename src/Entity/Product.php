@@ -28,7 +28,10 @@ use Doctrine\ORM\Mapping as ORM;
         new Put(security: 'is_granted(\'ROLE_HUMAN\')', denormalizationContext: ['groups' => ['product:write']]),
         new Delete(security: 'is_granted(\'ROLE_HUMAN\')'),
         new Post(securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\')'),
-        new GetCollection(security: 'is_granted(\'PUBLIC_ACCESS\')'),
+        new GetCollection(
+            security: 'is_granted(\'PUBLIC_ACCESS\')',
+            fetchPartial: true,
+        ),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
     normalizationContext: ['groups' => ['product:read']],

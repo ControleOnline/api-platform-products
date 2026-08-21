@@ -14,13 +14,15 @@ use ApiPlatform\Metadata\Put;
 use ControleOnline\Repository\ProductShowcaseItemRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ApiResource(
     operations: [
         new Get(security: 'is_granted(\'ROLE_HUMAN\')'),
         new GetCollection(security: 'is_granted(\'ROLE_HUMAN\')'),
-        new Post(securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\')'),
-        new Put(security: 'is_granted(\'ROLE_HUMAN\')'),
+        new Post(securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\') and object.hasConsistentOwnership()'),
+        new Put(securityPostDenormalize: 'is_granted(\'ROLE_HUMAN\') and object.hasConsistentOwnership()'),
         new Delete(security: 'is_granted(\'ROLE_HUMAN\')'),
     ],
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
@@ -53,6 +55,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\Index(name: 'product_showcase_item_product_active', columns: ['product_id', 'active'])]
 #[ORM\Index(name: 'product_showcase_item_inventory', columns: ['out_inventory_id'])]
 #[ORM\Entity(repositoryClass: ProductShowcaseItemRepository::class)]
+#[Assert\Callback('validateOwnership')]
 class ProductShowcaseItem
 {
     #[ORM\Id]
@@ -263,5 +266,41 @@ class ProductShowcaseItem
     public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
+    }
+
+    public function hasConsistentOwnership(): bool
+    {
+        if (!isset($this->showcase, $this->product)) {
+            return false;
+        }
+
+        $company = $this->showcase->getCompany();
+        if (!$this->samePeople($company, $this->product->getCompany())) {
+            return false;
+        }
+
+        return !$this->outInventory instanceof Inventory
+            || $this->samePeople($company, $this->outInventory->getPeople());
+    }
+
+    public function validateOwnership(ExecutionContextInterface $context): void
+    {
+        if (!$this->hasConsistentOwnership()) {
+            $context->buildViolation('Produto, estoque e showcase devem pertencer à mesma empresa.')
+                ->atPath('product')
+                ->addViolation();
+        }
+    }
+
+    private function samePeople(?People $left, ?People $right): bool
+    {
+        if (!$left instanceof People || !$right instanceof People) {
+            return false;
+        }
+
+        $leftId = (int) $left->getId();
+        $rightId = (int) $right->getId();
+
+        return $leftId > 0 && $rightId > 0 ? $leftId === $rightId : $left === $right;
     }
 }
