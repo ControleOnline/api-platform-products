@@ -2,7 +2,10 @@
 
 namespace ControleOnline\Tests\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
 use ControleOnline\Entity\Category;
+use ControleOnline\Entity\File;
 use ControleOnline\Entity\Product;
 use ControleOnline\Entity\ProductCategory;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +52,31 @@ class ProductTest extends TestCase
             ->getGroups();
 
         self::assertContains('order_conference:read', $groups);
+    }
+
+    public function testProductCollectionUsesPartialFetchToExcludeFileBlobs(): void
+    {
+        $resource = (new \ReflectionClass(Product::class))
+            ->getAttributes(ApiResource::class)[0]
+            ->newInstance();
+
+        $collectionOperation = null;
+        foreach ($resource->getOperations() as $operation) {
+            if ($operation instanceof GetCollection) {
+                $collectionOperation = $operation;
+                break;
+            }
+        }
+
+        self::assertInstanceOf(GetCollection::class, $collectionOperation);
+        self::assertTrue($collectionOperation->getFetchPartial());
+
+        $contentGroups = (new ReflectionProperty(File::class, 'content'))
+            ->getAttributes(Groups::class)[0]
+            ->newInstance()
+            ->getGroups();
+
+        self::assertNotContains('product:read', $contentGroups);
     }
 
     private function category(int $id, string $name, ?Category $parent = null): Category
