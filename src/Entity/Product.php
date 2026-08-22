@@ -46,8 +46,25 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'default_in_inventory_id', columns: ['default_in_inventory_id'])]
 #[ORM\UniqueConstraint(name: 'company_id', columns: ['company_id', 'sku'])]
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Product
 {
+    private const SERVICE_TYPE = 'service';
+
+    /** Billing-oriented unit patterns accepted for type=service (pt/en). */
+    private const SERVICE_BILLING_PATTERNS = [
+        '/\\bmes\\b|mens|month/',
+        '/\\bsem\\b|seman|week/',
+        '/quinzen/',
+        '/bimens|bimes|bimestre/',
+        '/trimes|quarter/',
+        '/semes/',
+        '/anual|year/',
+        '/\\bhr\\b|hora|hour/',
+        '/\\bdia\\b|diar|day/',
+        '/unitar|execucao unica|execucao|avuls|\\bun\\b|\\bund\\b|unic[ao]?/',
+        '/atend|sess/',
+    ];
     #[ApiFilter(filterClass: SearchFilter::class, properties: ['id' => 'exact'])]
     #[ORM\Column(name: 'id', type: 'integer', nullable: false)]
     #[ORM\Id]
@@ -409,5 +426,63 @@ class Product
             'id' => $rootCategoryId,
             'rank' => $rootCategory->getSortOrder(),
         ];
+    }
+
+    /**
+     * Services must use a billing unit (monthly, hourly, daily, unit, session),
+     * not a physical inventory unit (kg, ml, m).
+     */
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function validateServiceUnitCompatibility(): void
+    {
+        if ($this->type !== self::SERVICE_TYPE) {
+            return;
+        }
+
+        if (!($this->productUnit instanceof ProductUnity)) {
+            return;
+        }
+
+        if ($this->isCompatibleServiceUnit($this->productUnit)) {
+            return;
+        }
+
+        $label = $this->productUnit->getDescription() ?: $this->productUnit->getProductUnit();
+
+        throw new \InvalidArgumentException(
+            sprintf(
+                'Produtos do tipo service aceitam apenas unidades de cobranca compativeis com execucao unica ou recorrencia. Unidade "%s" e invalida.',
+                $label
+            )
+        );
+    }
+
+    private function isCompatibleServiceUnit(ProductUnity $productUnit): bool
+    {
+        $normalized = $this->normalizeServiceUnitLabel(implode(' ', array_filter([
+            $productUnit->getProductUnit(),
+            $productUnit->getDescription(),
+        ])));
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        foreach (self::SERVICE_BILLING_PATTERNS as $pattern) {
+            if (preg_match($pattern, $normalized) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeServiceUnitLabel(string $value): string
+    {
+        // Strip combining marks without requiring the intl Normalizer extension.
+        $normalized = preg_replace('/[\x{0300}-\x{036f}]/u', '', $value) ?? $value;
+
+        return strtolower(trim($normalized));
     }
 }
