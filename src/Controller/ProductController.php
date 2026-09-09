@@ -39,12 +39,12 @@ class ProductController extends AbstractController
     #[Security("is_granted('PUBLIC_ACCESS')")]
     public function getProductShowcaseCatalog(Request $request): JsonResponse
     {
-        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        $company = $this->productService->resolveCompanyReference($request->query->get('company'));
         if (!$company instanceof People) {
             return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
         }
 
-        $integrationKey = trim((string) ($request->get('integration_key') ?? $request->get('integrationKey') ?? ''));
+        $integrationKey = trim((string) ($request->query->get('integration_key') ?? $request->query->get('integrationKey') ?? ''));
         if ($integrationKey === '') {
             return new JsonResponse(['error' => 'Parametro obrigatorio: integration_key'], Response::HTTP_BAD_REQUEST);
         }
