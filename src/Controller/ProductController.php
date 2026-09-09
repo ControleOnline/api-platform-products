@@ -60,7 +60,7 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_HUMAN')")]
     public function getPurchasingSuggestion(Request $request): JsonResponse
     {
-        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        $company = $this->productService->resolveCompanyReference($request->query->get('company'));
         if (!$company instanceof People) {
             return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
         }
@@ -88,7 +88,7 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_HUMAN')")]
     public function getProductsInventory(Request $request): JsonResponse
     {
-        $company = $this->productService->resolveCompanyReference($request->get('company'));
+        $company = $this->productService->resolveCompanyReference($request->query->get('company'));
         if (!$company instanceof People) {
             return new JsonResponse(['error' => 'Empresa não encontrada'], Response::HTTP_NOT_FOUND);
         }
@@ -183,9 +183,9 @@ class ProductController extends AbstractController
     #[Security("is_granted('PUBLIC_ACCESS')")]
     public function downloadMenuCatalog(Request $request): Response
     {
-        $companyReference = trim((string) $request->get('company'));
+        $companyReference = trim((string) $request->query->get('company'));
         $modelId = $this->requestPayloadService->normalizeOptionalNumericId(
-            $request->get('model')
+            $request->query->get('model')
         );
 
         if ($companyReference === '') {
@@ -231,8 +231,8 @@ class ProductController extends AbstractController
     #[Security("is_granted('ROLE_HUMAN')")]
     public function downloadNormalizedCatalog(Request $request): Response
     {
-        $companyReference = trim((string) $request->get('company'));
-        $context = trim((string) $request->get('context'));
+        $companyReference = trim((string) $request->query->get('company'));
+        $context = trim((string) $request->query->get('context'));
 
         if ($companyReference === '') {
             return new JsonResponse(
