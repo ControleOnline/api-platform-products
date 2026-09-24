@@ -49,7 +49,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
 as Security;
 use Doctrine\ORM\QueryBuilder;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -70,35 +69,7 @@ class ProductService
 
     public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
     {
-        $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
-    }
-
-    public function prePersist(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function preUpdate(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function preRemove(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function assertCanManageProduct(Product $product): void
-    {
-        $company = $product->getCompany();
-
-        if (!$company instanceof People) {
-            throw new BadRequestHttpException('Empresa não encontrada para o produto informado.');
-        }
-
-        if (!$this->PeopleService->canAccessCompany($company)) {
-            throw new AccessDeniedHttpException('Você não pode gerir o catálogo desta empresa.');
-        }
+        // $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
     }
 
     public function getProductsInventory(People $company): array
