@@ -1,10 +1,8 @@
 name: Manager Worker
 
 on:
-  workflow_dispatch:
-
-# PAUSA: orquestracao automatica (ops) e dispatch automatico do Copilot.
-# O workflow permanece disponivel somente para execucao manual.
+  push:
+    branches: [master, dev, staging]
 
 permissions:
   contents: read
