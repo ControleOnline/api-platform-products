@@ -63,6 +63,12 @@ class ProductService
         private ProductCatalogImportService $catalogImport
     ) {}
 
+    /** Compatibility entry point retained for ProductPeople and older callers. */
+    public function assertCanManageProduct(Product $product): void
+    {
+        $this->catalogAccess->assertManageCompany($product->getCompany());
+    }
+
     public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
     {
         $this->catalogAccess->filter($queryBuilder, Product::class, $rootAlias);
