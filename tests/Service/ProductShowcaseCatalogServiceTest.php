@@ -241,7 +241,8 @@ class ProductShowcaseCatalogServiceTest extends TestCase
         ProductCatalogProjectionService $projection,
         ?DeviceService $deviceService = null,
         ?DomainService $domainService = null,
-        ?ProductCatalogCategoryTreeService $categoryTree = null
+        ?ProductCatalogCategoryTreeService $categoryTree = null,
+        ?ProductPublicCatalogAccessService $catalogAccess = null
     ): ProductShowcaseCatalogService {
         return new ProductShowcaseCatalogService(
             $manager,
@@ -250,7 +251,8 @@ class ProductShowcaseCatalogServiceTest extends TestCase
             new RequestStack(),
             $query,
             $projection,
-            $categoryTree ?? $this->createMock(ProductCatalogCategoryTreeService::class)
+            $categoryTree ?? $this->createMock(ProductCatalogCategoryTreeService::class),
+            $catalogAccess ?? $this->createMock(ProductPublicCatalogAccessService::class)
         );
     }
 

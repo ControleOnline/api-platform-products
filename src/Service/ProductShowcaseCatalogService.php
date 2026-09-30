@@ -27,7 +27,8 @@ class ProductShowcaseCatalogService
         private RequestStack $requestStack,
         private ProductCatalogQueryService $catalogQuery,
         private ProductCatalogProjectionService $catalogProjection,
-        private ProductCatalogCategoryTreeService $catalogCategoryTree
+        private ProductCatalogCategoryTreeService $catalogCategoryTree,
+        private ProductPublicCatalogAccessService $catalogAccess
     ) {}
 
     public function normalizeIntegrationKey(?string $integrationKey): string
@@ -41,6 +42,7 @@ class ProductShowcaseCatalogService
     public function buildCatalog(People $company, string $integrationKey, array $filters = []): array
     {
         $normalizedIntegrationKey = $this->normalizeIntegrationKey($integrationKey);
+        $this->catalogAccess->assertCatalog($company, $normalizedIntegrationKey);
         $showcase = $this->resolveShowcase(
             $company,
             $normalizedIntegrationKey,

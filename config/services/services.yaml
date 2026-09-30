@@ -19,4 +19,13 @@ services:
         resource: '../../src/Filter'    
     ControleOnline\Service\Imports\ProductImportService:
         tags:
-            - app.import_processor            
+            - app.import_processor
+
+    ControleOnline\Listener\ProductCatalogWriteListener:
+        tags:
+            - { name: doctrine.event_listener, event: onFlush }
+
+    ControleOnline\Metadata\ProductCatalogResourceMetadataFactory:
+        decorates: 'api_platform.metadata.resource.metadata_collection_factory'
+        arguments:
+            $inner: '@ControleOnline\Metadata\ProductCatalogResourceMetadataFactory.inner'

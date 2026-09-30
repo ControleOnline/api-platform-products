@@ -48,8 +48,7 @@ class ProductTest extends TestCase
     {
         $groups = (new \ReflectionMethod(Product::class, 'getTrackingCategory'))
             ->getAttributes(Groups::class)[0]
-            ->newInstance()
-            ->getGroups();
+            ->getArguments()[0];
 
         self::assertContains('order_conference:read', $groups);
     }
@@ -73,8 +72,7 @@ class ProductTest extends TestCase
 
         $contentGroups = (new ReflectionProperty(File::class, 'content'))
             ->getAttributes(Groups::class)[0]
-            ->newInstance()
-            ->getGroups();
+            ->getArguments()[0];
 
         self::assertNotContains('product:read', $contentGroups);
     }

@@ -7,7 +7,7 @@ use ControleOnline\Entity\ProductGroup;
 use ControleOnline\Entity\ProductGroupProduct;
 use ControleOnline\Service\PeopleService;
 use ControleOnline\Service\PrintService;
-use ControleOnline\Service\ProductService;
+use ControleOnline\Service\ProductCatalogImportService as ProductService;
 use ControleOnline\Repository\ProductGroupProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -173,9 +173,7 @@ class ProductServiceTest extends TestCase
     {
         return new ProductService(
             $this->createMock(EntityManagerInterface::class),
-            $this->createMock(TokenStorageInterface::class),
-            $this->createMock(PrintService::class),
-            $this->createMock(PeopleService::class),
+            $this->createMock(\ControleOnline\Service\ProductCatalogAccessService::class),
         );
     }
 

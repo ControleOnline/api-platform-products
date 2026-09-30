@@ -49,60 +49,34 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
 as Security;
 use Doctrine\ORM\QueryBuilder;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductService
 {
-    private const PRODUCT_CATEGORY_CONTEXT = 'products';
-    private const PRODUCT_TYPES = ['product', 'custom', 'component', 'service'];
-    private const PRODUCT_CONDITIONS = ['new', 'used', 'refurbished'];
-    private const GROUP_PRICE_CALCULATIONS = ['sum', 'average', 'biggest', 'free'];
-    private const GROUP_ITEM_TYPES = ['feedstock', 'component', 'package'];
-
     public function __construct(
         private EntityManagerInterface $manager,
         private Security $security,
         private PrintService $printService,
-        private PeopleService $PeopleService
+        private PeopleService $PeopleService,
+        private ProductCatalogAccessService $catalogAccess,
+        private ProductCatalogImportService $catalogImport
     ) {}
+
+    /** Compatibility entry point retained for ProductPeople and older callers. */
+    public function assertCanManageProduct(Product $product): void
+    {
+        $this->catalogAccess->assertManageCompany($product->getCompany());
+    }
 
     public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
     {
-        $this->PeopleService->checkCompany('company', $queryBuilder, $resourceClass, $applyTo, $rootAlias);
-    }
-
-    public function prePersist(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function preUpdate(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function preRemove(Product $product): void
-    {
-        $this->assertCanManageProduct($product);
-    }
-
-    public function assertCanManageProduct(Product $product): void
-    {
-        $company = $product->getCompany();
-
-        if (!$company instanceof People) {
-            throw new BadRequestHttpException('Empresa não encontrada para o produto informado.');
-        }
-
-        if (!$this->PeopleService->canAccessCompany($company)) {
-            throw new AccessDeniedHttpException('Você não pode gerir o catálogo desta empresa.');
-        }
+        $this->catalogAccess->filter($queryBuilder, Product::class, $rootAlias);
     }
 
     public function getProductsInventory(People $company): array
     {
+        $this->catalogAccess->assertReadCompany($company);
         return $this->manager->getRepository(Product::class)->getProductsInventory($company);
     }
 
@@ -174,6 +148,7 @@ class ProductService
 
     public function getPurchasingSuggestion(People $company)
     {
+        $this->catalogAccess->assertReadCompany($company);
         return $this->manager->getRepository(Product::class)->getPurchasingSuggestion($company);
     }
 
@@ -220,6 +195,8 @@ class ProductService
         if (!$company instanceof People) {
             throw new NotFoundHttpException('Empresa não encontrada');
         }
+
+        $this->catalogAccess->assertReadCompany($company);
 
         $product = $this->manager
             ->getRepository(Product::class)
@@ -280,6 +257,7 @@ class ProductService
 
     public function productLabelPrintData(People $provider, Device $device, array $label): Spool
     {
+        $this->catalogAccess->assertReadCompany($provider);
         $lines = $this->resolveProductLabelLines($label);
 
         if (empty($lines)) {
@@ -301,72 +279,7 @@ class ProductService
 
     public function importFromCSV(array $row, ?People $company): void
     {
-        if (!$company instanceof People) {
-            throw new \InvalidArgumentException('Empresa da importacao nao informada.');
-        }
-
-        $data = $this->normalizeImportRow($row);
-        $this->validateImportRow($data);
-
-        $category = $this->resolveImportCategory($data, $company);
-        $product = $this->resolveImportProduct(
-            $company,
-            $data,
-            'product_name',
-            'product_description',
-            'product_sku',
-            'product_price',
-            'product_type',
-            'product_condition',
-            'product_unit',
-            'product_active'
-        );
-
-        $this->linkProductToCategory($product, $category);
-
-        if (!$this->hasValue($data['group_name'])) {
-            $this->manager->flush();
-            return;
-        }
-
-        $group = $this->resolveImportGroup($product, $company, $data);
-
-        if (!$this->hasValue($data['item_name'])) {
-            $this->manager->flush();
-            return;
-        }
-
-        $item = $this->resolveImportProduct(
-            $company,
-            $data,
-            'item_name',
-            'item_description',
-            'item_sku',
-            'item_price',
-            'item_product_type',
-            'product_condition',
-            'item_unit',
-            'item_active',
-            'component'
-        );
-
-        $this->linkGroupItem($product, $group, $item, $data);
-        $this->manager->flush();
-    }
-
-    private function normalizeImportRow(array $row): array
-    {
-        $normalized = [];
-
-        foreach ($row as $key => $value) {
-            $normalized[$key] = is_string($value) ? trim($value) : $value;
-
-            if ($normalized[$key] === '') {
-                $normalized[$key] = null;
-            }
-        }
-
-        return $normalized;
+        $this->catalogImport->importFromCSV($row, $company);
     }
 
     private function requireCompanyReference(mixed $reference): People
@@ -457,452 +370,5 @@ class ProductService
         return (int) preg_replace('/\D+/', '', (string) $reference);
     }
 
-    private function validateImportRow(array $data): void
-    {
-        if (!$this->hasValue($data['category_name'] ?? null)) {
-            throw new \InvalidArgumentException('category_name e obrigatorio.');
-        }
 
-        if (!$this->hasValue($data['product_name'] ?? null)) {
-            throw new \InvalidArgumentException('product_name e obrigatorio.');
-        }
-
-        $hasGroupFields = $this->hasAnyValue([
-            $data['group_name'] ?? null,
-            $data['group_required'] ?? null,
-            $data['group_minimum'] ?? null,
-            $data['group_maximum'] ?? null,
-            $data['group_order'] ?? null,
-            $data['group_price_calculation'] ?? null,
-            $data['group_active'] ?? null,
-        ]);
-
-        $hasItemFields = $this->hasAnyValue([
-            $data['item_name'] ?? null,
-            $data['item_description'] ?? null,
-            $data['item_sku'] ?? null,
-            $data['item_price'] ?? null,
-            $data['item_quantity'] ?? null,
-            $data['item_product_type'] ?? null,
-            $data['item_unit'] ?? null,
-            $data['item_active'] ?? null,
-            $data['item_show_in_parent_queue'] ?? null,
-        ]);
-
-        if ($hasItemFields && !$this->hasValue($data['group_name'] ?? null)) {
-            throw new \InvalidArgumentException('item_* exige group_name preenchido.');
-        }
-
-        if ($hasGroupFields && !$this->hasValue($data['group_name'] ?? null)) {
-            throw new \InvalidArgumentException('Campos de grupo exigem group_name preenchido.');
-        }
-
-        if (($data['product_type'] ?? null) !== null) {
-            $this->assertAllowedValue($data['product_type'], self::PRODUCT_TYPES, 'product_type');
-        }
-
-        if (($data['item_product_type'] ?? null) !== null) {
-            $this->assertAllowedValue($data['item_product_type'], self::GROUP_ITEM_TYPES, 'item_product_type');
-        }
-
-        if (($data['product_condition'] ?? null) !== null) {
-            $this->assertAllowedValue($data['product_condition'], self::PRODUCT_CONDITIONS, 'product_condition');
-        }
-
-        if (($data['group_price_calculation'] ?? null) !== null) {
-            $this->assertAllowedValue(
-                $data['group_price_calculation'],
-                self::GROUP_PRICE_CALCULATIONS,
-                'group_price_calculation'
-            );
-        }
-
-        $minimum = $this->parseNullableInt($data['group_minimum'] ?? null, 'group_minimum');
-        $maximum = $this->parseNullableInt($data['group_maximum'] ?? null, 'group_maximum');
-        $itemQuantity = $this->parseNullableFloat($data['item_quantity'] ?? null, 'item_quantity');
-
-        if ($this->parseNullableBool($data['group_required'] ?? null, 'group_required') === true && $minimum === null) {
-            $minimum = 1;
-        }
-
-        if ($maximum !== null && $minimum !== null && $maximum < $minimum) {
-            throw new \InvalidArgumentException('group_maximum nao pode ser menor que group_minimum.');
-        }
-
-        if ($itemQuantity !== null && $itemQuantity <= 0) {
-            throw new \InvalidArgumentException('item_quantity deve ser maior que zero.');
-        }
-    }
-
-    private function resolveImportCategory(array $data, People $company): Category
-    {
-        $parent = null;
-
-        if ($this->hasValue($data['category_parent_name'] ?? null)) {
-            $parent = $this->findOrCreateCategory($company, $data['category_parent_name'], null);
-        }
-
-        return $this->findOrCreateCategory($company, $data['category_name'], $parent);
-    }
-
-    private function findOrCreateCategory(People $company, string $name, ?Category $parent): Category
-    {
-        $criteria = [
-            'company' => $company,
-            'context' => self::PRODUCT_CATEGORY_CONTEXT,
-            'name' => $name,
-            'parent' => $parent,
-        ];
-
-        $category = $this->manager->getRepository(Category::class)->findOneBy($criteria);
-
-        if ($category instanceof Category) {
-            return $category;
-        }
-
-        $category = new Category();
-        $category->setCompany($company);
-        $category->setContext(self::PRODUCT_CATEGORY_CONTEXT);
-        $category->setName($name);
-        $category->setParent($parent);
-
-        $this->manager->persist($category);
-
-        return $category;
-    }
-
-    private function resolveImportProduct(
-        People $company,
-        array $data,
-        string $nameField,
-        string $descriptionField,
-        string $skuField,
-        string $priceField,
-        string $typeField,
-        string $conditionField,
-        string $unitField,
-        string $activeField,
-        string $defaultType = 'product'
-    ): Product {
-        $sku = $data[$skuField] ?? null;
-        $name = $data[$nameField] ?? null;
-
-        if ($sku !== null) {
-            $product = $this->manager->getRepository(Product::class)->findOneBy([
-                'company' => $company,
-                'sku' => $sku,
-            ]);
-
-            if ($product instanceof Product) {
-                return $this->applyImportProductData($product, $data, $descriptionField, $priceField, $typeField, $conditionField, $unitField, $activeField, false);
-            }
-        }
-
-        $product = $this->manager->getRepository(Product::class)->findOneBy([
-            'company' => $company,
-            'product' => $name,
-        ]);
-
-        if (!$product instanceof Product) {
-            $product = new Product();
-            $product->setCompany($company);
-            $product->setProduct($name);
-            $this->manager->persist($product);
-
-            return $this->applyImportProductData($product, $data, $descriptionField, $priceField, $typeField, $conditionField, $unitField, $activeField, true, $skuField, $defaultType);
-        }
-
-        return $this->applyImportProductData($product, $data, $descriptionField, $priceField, $typeField, $conditionField, $unitField, $activeField, false, $skuField, $defaultType);
-    }
-
-    private function applyImportProductData(
-        Product $product,
-        array $data,
-        string $descriptionField,
-        string $priceField,
-        string $typeField,
-        string $conditionField,
-        string $unitField,
-        string $activeField,
-        bool $isNew,
-        string $skuField = 'product_sku',
-        string $defaultType = 'product'
-    ): Product {
-        $sku = $data[$skuField] ?? null;
-        if ($sku !== null && ($isNew || $product->getSku() === null)) {
-            $product->setSku($sku);
-        }
-
-        if ($isNew) {
-            $product->setDescription('');
-            $product->setPrice(0);
-            $product->setType($defaultType);
-            $product->setProductCondition('new');
-            $product->setActive(true);
-            $product->setProductUnit($this->resolveProductUnit('UN'));
-        }
-
-        if (($data[$descriptionField] ?? null) !== null) {
-            $product->setDescription($data[$descriptionField]);
-        }
-
-        $price = $this->parseNullableFloat($data[$priceField] ?? null, $priceField);
-        if ($price !== null) {
-            $product->setPrice($price);
-        }
-
-        if (($data[$typeField] ?? null) !== null) {
-            $product->setType($data[$typeField]);
-        } elseif ($isNew) {
-            $product->setType($defaultType);
-        }
-
-        if (($data[$conditionField] ?? null) !== null) {
-            $product->setProductCondition($data[$conditionField]);
-        }
-
-        if (($data[$unitField] ?? null) !== null) {
-            $product->setProductUnit($this->resolveProductUnit($data[$unitField]));
-        }
-
-        $active = $this->parseNullableBool($data[$activeField] ?? null, $activeField);
-        if ($active !== null) {
-            $product->setActive($active);
-        }
-
-        return $product;
-    }
-
-    private function resolveProductUnit(?string $productUnit): ProductUnity
-    {
-        $productUnit = $productUnit ?: 'UN';
-
-        $unit = $this->manager->getRepository(ProductUnity::class)->findOneBy([
-            'productUnit' => $productUnit,
-        ]);
-
-        if (!$unit instanceof ProductUnity) {
-            throw new \InvalidArgumentException(sprintf('Unidade "%s" nao encontrada.', $productUnit));
-        }
-
-        return $unit;
-    }
-
-    private function linkProductToCategory(Product $product, Category $category): void
-    {
-        $link = $this->manager->getRepository(ProductCategory::class)->findOneBy([
-            'product' => $product,
-            'category' => $category,
-        ]);
-
-        if ($link instanceof ProductCategory) {
-            return;
-        }
-
-        $link = new ProductCategory();
-        $link->setProduct($product);
-        $link->setCategory($category);
-        $this->manager->persist($link);
-    }
-
-    private function resolveImportGroup(Product $parentProduct, People $company, array $data): ProductGroup
-    {
-        $group = $this->manager->getRepository(ProductGroup::class)
-            ->findSharedByNameAndCompany($data['group_name'], $company);
-
-        $isNew = !$group instanceof ProductGroup;
-
-        if ($isNew) {
-            $group = new ProductGroup();
-            $group->setCompany($company);
-            $group->setProductGroup($data['group_name']);
-            $group->setRequired(false);
-            $group->setMinimum(0);
-            $group->setMaximum(0);
-            $group->setGroupOrder(0);
-            $group->setPriceCalculation('sum');
-            $group->setActive(true);
-            $group->setShowInDisplay(false);
-            $this->manager->persist($group);
-        }
-
-        $this->linkParentProductToGroup($parentProduct, $group);
-
-        $required = $this->parseNullableBool($data['group_required'] ?? null, 'group_required');
-        $minimum = $this->parseNullableInt($data['group_minimum'] ?? null, 'group_minimum');
-        $maximum = $this->parseNullableInt($data['group_maximum'] ?? null, 'group_maximum');
-
-        if ($required === true && $minimum === null) {
-            $minimum = 1;
-        }
-
-        if ($required !== null) {
-            $group->setRequired($required);
-        }
-
-        if ($minimum !== null) {
-            $group->setMinimum($minimum);
-        }
-
-        if ($maximum !== null) {
-            $group->setMaximum($maximum);
-        }
-
-        $groupOrder = $this->parseNullableInt($data['group_order'] ?? null, 'group_order');
-        if ($groupOrder !== null) {
-            $group->setGroupOrder($groupOrder);
-        }
-
-        if (($data['group_price_calculation'] ?? null) !== null) {
-            $group->setPriceCalculation($data['group_price_calculation']);
-        }
-
-        $active = $this->parseNullableBool($data['group_active'] ?? null, 'group_active');
-        if ($active !== null) {
-            $group->setActive($active);
-        }
-
-        return $group;
-    }
-
-    private function linkParentProductToGroup(Product $parentProduct, ProductGroup $group): void
-    {
-        $link = $this->manager->getRepository(ProductGroupParent::class)->findOneBy([
-            'parentProduct' => $parentProduct,
-            'productGroup' => $group,
-        ]);
-
-        if (!$link instanceof ProductGroupParent) {
-            $link = new ProductGroupParent();
-            $link->setParentProduct($parentProduct);
-            $link->setProductGroup($group);
-            $this->manager->persist($link);
-        }
-
-        $link->setActive(true);
-    }
-
-    private function linkGroupItem(Product $parentProduct, ProductGroup $group, Product $item, array $data): void
-    {
-        $productType = $data['item_product_type'] ?? null;
-        $itemQuantity = $this->parseNullableFloat($data['item_quantity'] ?? null, 'item_quantity');
-        $itemPrice = $this->parseNullableFloat($data['item_price'] ?? null, 'item_price');
-        $quantity = $itemQuantity ?? 1.0;
-        $groupProductRepository = $this->manager->getRepository(ProductGroupProduct::class);
-        $link = $groupProductRepository->findSharedGroupItem($group, $item, $productType, $quantity);
-
-        if (!$link instanceof ProductGroupProduct) {
-            $link = new ProductGroupProduct();
-            $link->setProductGroup($group);
-            $link->setProductChild($item);
-            $link->setProductType('component');
-            $link->setQuantity($quantity);
-            $link->setPrice(0);
-            $link->setActive(true);
-            $this->manager->persist($link);
-        }
-
-        if ($productType !== null) {
-            $link->setProductType($productType);
-        }
-
-        if ($itemPrice !== null) {
-            $link->setPrice($itemPrice);
-        }
-
-        $active = $this->parseNullableBool($data['item_active'] ?? null, 'item_active');
-        if ($active !== null) {
-            $link->setActive($active);
-        }
-
-        $showInParentQueue = $this->parseNullableBool($data['item_show_in_parent_queue'] ?? null, 'item_show_in_parent_queue');
-        if ($showInParentQueue !== null) {
-            $link->setShowInParentQueue($showInParentQueue);
-        }
-
-        if (($link->getProductType() ?? 'component') === 'feedstock') {
-            $link->setProduct($parentProduct);
-        } else {
-            $link->setProduct(null);
-        }
-    }
-
-    private function parseNullableFloat(mixed $value, string $field): ?float
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $normalized = str_replace(',', '.', (string) $value);
-
-        if (!is_numeric($normalized)) {
-            throw new \InvalidArgumentException(sprintf('%s precisa ser numerico.', $field));
-        }
-
-        return (float) $normalized;
-    }
-
-    private function parseNullableInt(mixed $value, string $field): ?int
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        if (filter_var($value, FILTER_VALIDATE_INT) === false) {
-            throw new \InvalidArgumentException(sprintf('%s precisa ser inteiro.', $field));
-        }
-
-        return (int) $value;
-    }
-
-    private function parseNullableBool(mixed $value, string $field): ?bool
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $normalized = strtolower(trim((string) $value));
-        $map = [
-            '1' => true,
-            '0' => false,
-            'true' => true,
-            'false' => false,
-            'yes' => true,
-            'no' => false,
-            'sim' => true,
-            'nao' => false,
-            'não' => false,
-        ];
-
-        if (!array_key_exists($normalized, $map)) {
-            throw new \InvalidArgumentException(sprintf('%s precisa ser booleano.', $field));
-        }
-
-        return $map[$normalized];
-    }
-
-    private function assertAllowedValue(string $value, array $allowedValues, string $field): void
-    {
-        if (!in_array($value, $allowedValues, true)) {
-            throw new \InvalidArgumentException(
-                sprintf('%s invalido. Valores aceitos: %s.', $field, implode(', ', $allowedValues))
-            );
-        }
-    }
-
-    private function hasValue(mixed $value): bool
-    {
-        return $value !== null && trim((string) $value) !== '';
-    }
-
-    private function hasAnyValue(array $values): bool
-    {
-        foreach ($values as $value) {
-            if ($this->hasValue($value)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
