@@ -1,0 +1,13 @@
+{
+  "version": "1.0.2",
+  "rc": 1,
+  "branch": "rc/1.0.2-rc.1",
+  "baseMaster": "2efdb847a9fddf827af7b8d19e81c6243fc19da9",
+  "tasks": [
+    167
+  ],
+  "repositories": {
+    "ControleOnline/api-platform-products": "b789b55ff9f40a067c3a011b42f1ec023fa9aa54"
+  },
+  "frozen": true
+}
