@@ -118,6 +118,28 @@ class ProductCatalogProjectionServiceTest extends TestCase
         );
     }
 
+
+    public function testPublicProjectionExcludesPrivateAndForeignCompanyFiles(): void
+    {
+        $company = $this->people(1); $foreign = $this->people(2);
+        $product = $this->product(1, 'Public item', $company);
+        $links = [];
+        foreach ([[11, true, $company], [12, false, $company], [13, true, $foreign]] as [$id, $public, $owner]) {
+            $file = $this->createMock(\ControleOnline\Entity\File::class);
+            $file->method('getId')->willReturn($id); $file->method('isPublic')->willReturn($public);
+            $file->method('getPeople')->willReturn($owner); $file->method('getFileType')->willReturn('image');
+            $file->method('getFileName')->willReturn('image.png'); $file->method('getExtension')->willReturn('png');
+            $file->method('getContext')->willReturn('product');
+            $link = (new ProductFile())->setProduct($product)->setFile($file); $this->setId($link, $id);
+            $links[] = $link;
+        }
+        $repository = $this->createMock(ProductFileRepository::class); $repository->method('findBy')->willReturn($links);
+        $manager = $this->createMock(EntityManagerInterface::class); $manager->method('getRepository')->willReturn($repository);
+        $method = new \ReflectionMethod(ProductCatalogProjectionService::class, 'buildProductFilesPayload');
+        $files = $method->invoke(new ProductCatalogProjectionService($manager), $product);
+        self::assertSame([11], array_column($files, 'id'));
+    }
+
     private function people(int $id): People
     {
         $people = $this->createMock(People::class);

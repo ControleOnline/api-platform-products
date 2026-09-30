@@ -184,7 +184,8 @@ class ProductShowcaseCatalogServiceTest extends TestCase
             $domainService ?? $this->createMock(DomainService::class),
             new RequestStack(),
             $query,
-            $projection
+            $projection,
+            $this->createMock(\ControleOnline\Service\ProductPublicCatalogAccessService::class)
         );
     }
 
