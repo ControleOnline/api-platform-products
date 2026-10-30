@@ -12,6 +12,8 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use ControleOnline\Entity\People;
 use ControleOnline\Repository\InventoryRepository;
@@ -63,6 +65,21 @@ class Inventory
     #[Groups(['inventory:read', 'inventory:write'])]
     private $people;
 
+    /**
+     * Showcases (marketplaces/channels) that sell from this warehouse.
+     *
+     * @var Collection<int, ProductShowcase>
+     */
+    #[ORM\ManyToMany(targetEntity: ProductShowcase::class, mappedBy: 'inventories')]
+    #[Groups(['inventory:read'])]
+    private Collection $showcases;
+
+
+    public function __construct()
+    {
+        $this->showcases = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,5 +122,11 @@ class Inventory
     {
         $this->people = $people;
         return $this;
+    }
+
+    /** @return Collection<int, ProductShowcase> */
+    public function getShowcases(): Collection
+    {
+        return $this->showcases;
     }
 }
