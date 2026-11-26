@@ -19,7 +19,9 @@ use ControleOnline\Service\ProductService;
 use ControleOnline\Repository\ProductRepository;
 use ControleOnline\Repository\OrderRepository;
 use Exception;
-use Symfony\Component\Security\Http\Attribute\Security;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use ControleOnline\Service\ProductCatalogAccessService;
+use ControleOnline\Service\ProductPublicCatalogAccessService;
 use ControleOnline\Entity\Product;
 
 class ProductController extends AbstractController
@@ -32,11 +34,13 @@ class ProductController extends AbstractController
         private HydratorService $hydratorService,
         private RequestPayloadService $requestPayloadService,
         private ProductRepository $productRepository,
-        private OrderRepository $orderRepository
+        private OrderRepository $orderRepository,
+        private ProductCatalogAccessService $catalogAccess,
+        private ProductPublicCatalogAccessService $publicCatalogAccess
     ) {}
 
     #[Route('/product-showcases/catalog', name: 'product_showcases_catalog', methods: ['GET'])]
-    #[Security("is_granted('PUBLIC_ACCESS')")]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function getProductShowcaseCatalog(Request $request): JsonResponse
     {
         $company = $this->productService->resolveCompanyReference($request->query->get('company'));
@@ -57,7 +61,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/purchasing-suggestion', name: 'purchasing_suggestion', methods: ['GET'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function getPurchasingSuggestion(Request $request): JsonResponse
     {
         $company = $this->productService->resolveCompanyReference($request->query->get('company'));
@@ -70,7 +74,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/purchasing-suggestion/print', name: 'purchasing_suggestion_print', methods: ['POST'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function printPurchasingSuggestion(Request $request): JsonResponse
     {
         try {
@@ -79,13 +83,15 @@ class ProductController extends AbstractController
             );
 
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
+        } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
+            throw $e;
         } catch (Exception $e) {
             return new JsonResponse($this->hydratorService->error($e));
         }
     }
 
     #[Route('/products/inventory', name: 'products_inventory', methods: ['GET'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function getProductsInventory(Request $request): JsonResponse
     {
         $company = $this->productService->resolveCompanyReference($request->query->get('company'));
@@ -98,7 +104,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/labels/print', name: 'products_labels_print', methods: ['POST'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function printLabel(Request $request): JsonResponse
     {
         try {
@@ -107,13 +113,15 @@ class ProductController extends AbstractController
             );
 
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
+        } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
+            throw $e;
         } catch (Exception $e) {
             return new JsonResponse($this->hydratorService->error($e));
         }
     }
 
     #[Route('/products/inventory/print', name: 'products_inventory_print', methods: ['POST'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function print(Request $request): JsonResponse
     {
         try {
@@ -121,13 +129,15 @@ class ProductController extends AbstractController
                 $request->getContent()
             );
             return new JsonResponse($this->hydratorService->item(Spool::class, $printData->getId(), "spool_item:read"), Response::HTTP_OK);
+        } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
+            throw $e;
         } catch (Exception $e) {
             return new JsonResponse($this->hydratorService->error($e));
         }
     }
 
     #[Route('/products/sku', name: 'product_by_sku', methods: ['POST'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function getProductBySku(Request $request): JsonResponse
     {
         try {
@@ -143,13 +153,15 @@ class ProductController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/products/{id}/summary', name: 'product_summary', methods: ['GET'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function getProductSummary(int $id, Request $request): JsonResponse
     {
         $query = $request->query->all();
@@ -161,6 +173,7 @@ class ProductController extends AbstractController
                 return new JsonResponse(['error' => 'Produto não encontrado.'], Response::HTTP_NOT_FOUND);
             }
 
+            $this->catalogAccess->assertReadCompany($product->getCompany());
             $summary = $this->orderRepository->resolveProductSalesSummary(
                 $product,
                 is_string($orderDate['after'] ?? null) ? $orderDate['after'] : null,
@@ -174,13 +187,15 @@ class ProductController extends AbstractController
             ]);
         } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
+            throw $e;
         } catch (Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/products/menu/download', name: 'product_menu_download', methods: ['GET'])]
-    #[Security("is_granted('PUBLIC_ACCESS')")]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function downloadMenuCatalog(Request $request): Response
     {
         $companyReference = trim((string) $request->query->get('company'));
@@ -202,6 +217,7 @@ class ProductController extends AbstractController
         }
 
         try {
+            $this->publicCatalogAccess->assertCatalog($company, 'shop');
             $pdf = $this->productMenuService->generateCatalogPdf(
                 $company,
                 $modelId
@@ -220,15 +236,17 @@ class ProductController extends AbstractController
         } catch (\Throwable $exception) {
             return new JsonResponse(
                 ['error' => $exception->getMessage()],
-                $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                $exception instanceof \Symfony\Component\Security\Core\Exception\AccessDeniedException
+                    ? Response::HTTP_FORBIDDEN
+                    : ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
                     ? $exception->getStatusCode()
-                    : Response::HTTP_INTERNAL_SERVER_ERROR
+                    : Response::HTTP_INTERNAL_SERVER_ERROR)
             );
         }
     }
 
     #[Route('/products/catalog/download-normalized', name: 'product_catalog_download_normalized', methods: ['GET'])]
-    #[Security("is_granted('ROLE_HUMAN')")]
+    #[IsGranted('ROLE_HUMAN')]
     public function downloadNormalizedCatalog(Request $request): Response
     {
         $companyReference = trim((string) $request->query->get('company'));
@@ -248,6 +266,7 @@ class ProductController extends AbstractController
         }
 
         try {
+            $this->catalogAccess->assertReadCompany($company);
             $csv = $this->productCatalogNormalizedExportService->buildNormalizedCatalogCsv(
                 $company,
                 $context
@@ -266,9 +285,11 @@ class ProductController extends AbstractController
         } catch (\Throwable $exception) {
             return new JsonResponse(
                 ['error' => $exception->getMessage()],
-                $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                $exception instanceof \Symfony\Component\Security\Core\Exception\AccessDeniedException
+                    ? Response::HTTP_FORBIDDEN
+                    : ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
                     ? $exception->getStatusCode()
-                    : Response::HTTP_INTERNAL_SERVER_ERROR
+                    : Response::HTTP_INTERNAL_SERVER_ERROR)
             );
         }
     }

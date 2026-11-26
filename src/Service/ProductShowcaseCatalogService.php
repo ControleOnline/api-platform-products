@@ -26,7 +26,9 @@ class ProductShowcaseCatalogService
         private DomainService $domainService,
         private RequestStack $requestStack,
         private ProductCatalogQueryService $catalogQuery,
-        private ProductCatalogProjectionService $catalogProjection
+        private ProductCatalogProjectionService $catalogProjection,
+        private ProductCatalogCategoryTreeService $catalogCategoryTree,
+        private ProductPublicCatalogAccessService $catalogAccess
     ) {}
 
     public function normalizeIntegrationKey(?string $integrationKey): string
@@ -40,6 +42,7 @@ class ProductShowcaseCatalogService
     public function buildCatalog(People $company, string $integrationKey, array $filters = []): array
     {
         $normalizedIntegrationKey = $this->normalizeIntegrationKey($integrationKey);
+        $this->catalogAccess->assertCatalog($company, $normalizedIntegrationKey);
         $showcase = $this->resolveShowcase(
             $company,
             $normalizedIntegrationKey,
@@ -72,6 +75,7 @@ class ProductShowcaseCatalogService
                 $totalItems,
                 $showcase,
                 'showcase',
+                $company,
                 $projection['categoryIds']
             );
         }
@@ -92,6 +96,7 @@ class ProductShowcaseCatalogService
             $totalItems,
             null,
             'product',
+            $company,
             $projection['categoryIds']
         );
     }
@@ -101,6 +106,7 @@ class ProductShowcaseCatalogService
         int $totalItems,
         ?ProductShowcase $showcase,
         string $source,
+        People $company,
         array $categoryIds
     ): array {
         return [
@@ -127,6 +133,7 @@ class ProductShowcaseCatalogService
                 'source' => $showcase instanceof ProductShowcase ? 'showcase' : 'legacy-product',
                 'ids' => $categoryIds,
             ],
+            'categories' => $this->catalogCategoryTree->build($company, $categoryIds),
         ];
     }
 

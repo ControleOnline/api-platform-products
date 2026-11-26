@@ -33,6 +33,8 @@ final class ProductControllerTest extends TestCase
             $payloadService ?? $this->createMock(RequestPayloadService::class),
             $this->createMock(ProductRepository::class),
             $this->createMock(OrderRepository::class),
+            $this->createMock(\ControleOnline\Service\ProductCatalogAccessService::class),
+            $this->createMock(\ControleOnline\Service\ProductPublicCatalogAccessService::class),
         );
     }
 
