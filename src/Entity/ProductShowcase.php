@@ -94,9 +94,22 @@ class ProductShowcase
     #[ORM\OneToMany(targetEntity: ProductShowcaseItem::class, mappedBy: 'showcase')]
     private Collection $items;
 
+    /**
+     * Warehouses (depósitos) that feed availability for this showcase/marketplace channel.
+     *
+     * @var Collection<int, Inventory>
+     */
+    #[ORM\ManyToMany(targetEntity: Inventory::class, inversedBy: 'showcases')]
+    #[ORM\JoinTable(name: 'product_showcase_inventory')]
+    #[ORM\JoinColumn(name: 'product_showcase_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'inventory_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[Groups(['product_showcase:read', 'product_showcase:write'])]
+    private Collection $inventories;
+
     public function __construct()
     {
         $this->items = new ArrayCollection();
+        $this->inventories = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -210,5 +223,39 @@ class ProductShowcase
     public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
+    }
+
+    /** @return Collection<int, Inventory> */
+    public function getInventories(): Collection
+    {
+        return $this->inventories;
+    }
+
+    public function addInventory(Inventory $inventory): self
+    {
+        if (!$this->inventories->contains($inventory)) {
+            $this->inventories->add($inventory);
+        }
+
+        return $this;
+    }
+
+    public function removeInventory(Inventory $inventory): self
+    {
+        $this->inventories->removeElement($inventory);
+
+        return $this;
+    }
+
+    public function setInventories(iterable $inventories): self
+    {
+        $this->inventories->clear();
+        foreach ($inventories as $inventory) {
+            if ($inventory instanceof Inventory) {
+                $this->addInventory($inventory);
+            }
+        }
+
+        return $this;
     }
 }

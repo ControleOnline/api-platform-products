@@ -317,6 +317,9 @@ class ProductCatalogProjectionService
             }
 
             $file = $productFile->getFile();
+            if (!$file->isPublic() || !$this->sameCompany($file->getPeople(), $product->getCompany())) {
+                continue;
+            }
             $files[] = [
                 'id' => $productFile->getId(),
                 '@id' => '/product_files/' . $productFile->getId(),
